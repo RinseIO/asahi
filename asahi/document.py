@@ -18,5 +18,5 @@ class Document(DocumentBase):
             like,
         ]
         """
-        query = Query()
+        query = Query(cls)
         return query.intersect(member, **kwargs)

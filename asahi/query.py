@@ -31,15 +31,18 @@ class Query(object):
     """
     An asahi query object.
     """
-    def __init__(self):
+    def __init__(self, document):
+        self.document = document
         self.items = [
             QueryCell(QueryOperation.all)
         ]
 
-    def intersect(self, member, **kwargs):
+    def intersect(self, *args, **kwargs):
         """
         Intersect the query.
-        :param member: The member's name of the document.
+        :param args:
+            The member's name of the document or
+                the sub queries' lambda function.
         :param kwargs: [
             unequal,
             equal,
@@ -50,18 +53,31 @@ class Query(object):
             like,
         ]
         """
-        operation_code, value = self.__parse_operation(**kwargs)
-        self.items.append(QueryCell(
-            QueryOperation.intersection | operation_code,
-            member=member,
-            value=value,
-        ))
+        if isinstance(args[0], basestring):
+            # .and('member', equal='')
+            member = args[0]
+            operation_code, value = self.__parse_operation(**kwargs)
+            self.items.append(QueryCell(
+                QueryOperation.intersection | operation_code,
+                member=member,
+                value=value,
+            ))
+        else:
+            # .and(lambda x: x.where())
+            func = args[0]
+            queries = func(self.document).items
+            self.items.append(QueryCell(
+                QueryOperation.intersection,
+                sub_queries=queries
+            ))
         return self
 
-    def union(self, member, **kwargs):
+    def union(self, *args, **kwargs):
         """
         Union the query.
-        :param member: The member's name of the document.
+        :param args:
+            The member's name of the document or
+                the sub queries' lambda function.
         :param kwargs: [
             unequal,
             equal,
@@ -72,20 +88,32 @@ class Query(object):
             like,
         ]
         """
-        operation_code, value = self.__parse_operation(**kwargs)
-        self.items.append(QueryCell(
-            QueryOperation.union | operation_code,
-            member=member,
-            value=value,
-        ))
-        return self
-
-    def bracket(self):
+        if isinstance(args[0], basestring):
+            # .or('member', equal='')
+            member = args[0]
+            operation_code, value = self.__parse_operation(**kwargs)
+            self.items.append(QueryCell(
+                QueryOperation.union | operation_code,
+                member=member,
+                value=value,
+            ))
+        else:
+            # .or(lambda x: x.where())
+            func = args[0]
+            queries = func(self.document).items
+            self.items.append(QueryCell(
+                QueryOperation.union,
+                sub_queries=queries
+            ))
         return self
 
     def fetch(self):
         import logging
-        logging.error([x.__dict__ for x in self.items])
+        for item in self.items:
+            result = item.__dict__
+            if item.sub_queries is not None:
+                result['sub_queries'] = [x.__dict__ for x in item.sub_queries]
+            logging.error(result)
 
     def __parse_operation(self, **kwargs):
         """
