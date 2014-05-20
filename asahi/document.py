@@ -2,6 +2,7 @@ from couchdbkit.schema import DocumentBase
 from couchdbkit.ext.django.schema import DocumentMeta
 from couchdbkit.ext.django.loading import get_db
 from query import Query
+import utils
 
 
 class Document(DocumentBase):
@@ -33,3 +34,13 @@ class Document(DocumentBase):
         """
         query = Query(cls)
         return query.intersect(member, **kwargs)
+
+    def save(self, **params):
+        super(Document, self).save(**params)
+        es = utils.get_elasticsearch()
+        es.index(
+            index=self.get_db().dbname,
+            doc_type=self.__class__.__name__,
+            id=self._id,
+            body=self._doc
+        )
