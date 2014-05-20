@@ -1,3 +1,4 @@
+import utils
 
 
 class QueryOperation(object):
@@ -108,12 +109,55 @@ class Query(object):
         return self
 
     def fetch(self):
-        import logging
-        for item in self.items:
-            result = item.__dict__
-            if item.sub_queries is not None:
-                result['sub_queries'] = [x.__dict__ for x in item.sub_queries]
-            logging.error(result)
+        es = utils.get_elasticsearch()
+        search_result = es.search(
+            self.document.get_db().dbname,
+            body=self.__compile_queries(self.items),
+        )
+        result = []
+        for hits in search_result['hits']['hits']:
+            result.append(self.document.wrap(hits['_source']))
+        return result
+
+
+    def __compile_queries(self, queries):
+        """
+        Compile asahi queries to the elasticsearch query.
+        :param queries: {list} The asahi queries.
+        :return: {dict} The elasticsearch query.
+        """
+        should_items = []
+        for query in queries:
+            if query.sub_queries:
+                # compile sub queries
+                pass
+            else:
+                if query.operation & QueryOperation.intersection == QueryOperation.intersection:
+                    # intersect
+                    should_items.append(self.__compile_query_operation(query))
+
+        result = {
+            'fields': ['_source'],
+            'query': {
+                'bool': {
+                    'should': should_items
+                }
+            }
+        }
+        return result
+    def __compile_query_operation(self, query):
+        """
+        Parse the asahi query operation to elasticsearch query.
+        :param query: The asahi query.
+        :return: {dict} The elasticsearch query.
+        """
+        operation = query.operation & QueryOperation.normal_operation_mask
+        if operation & QueryOperation.equal == QueryOperation.equal:
+            return {
+                'match': {
+                    query.member: query.value
+                }
+            }
 
     def __parse_operation(self, **kwargs):
         """
