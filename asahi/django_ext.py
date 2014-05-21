@@ -1,9 +1,12 @@
+import sys, inspect
 from django.db.models import signals
 from django.conf import settings
 from restkit import BasicAuth
 from couchdbkit import Server as CouchDBServer
 from couchdbkit.exceptions import ResourceNotFound
 from couchdbkit.resource import CouchdbResource
+from elasticsearch.exceptions import NotFoundError
+import utils
 
 
 class Handler(object):
@@ -16,12 +19,7 @@ class Handler(object):
 
     def sync(self, app):
         app_name = app.__name__.rsplit('.', 1)[0]
-        db_url = None
-        for database in self.databases:
-            name, url = database
-            if name == app_name:
-                db_url = url
-                break
+        db_url = self.__get_db_url(app_name)
         if db_url is None:
             return
         print('sync `%s` in CouchDB' % app_name)
@@ -40,7 +38,7 @@ class Handler(object):
         doc = {
             'views': {
                 'id': {
-                    'map': u'function(doc){emit(doc._id, doc);}'
+                    'map': 'function(doc){emit(doc._id, doc);}'
                 }
             },
             '_id': doc_id,
@@ -52,6 +50,37 @@ class Handler(object):
             pass
         db.save_doc(doc, force_update=True)
 
+    def re_index(self, app, document_class):
+        es = utils.get_elasticsearch()
+        app_name = app.__name__.rsplit('.', 1)[0]
+        db = document_class.get_db()
+        print('re-index `%s` in ElasticSearch' % db.dbname)
+        documents = db.view(
+            '%s/id' % app_name,
+            schema=document_class,
+            wrapper=None,
+            wrap_doc=True,
+        ).all()
+        try:
+            es.indices.delete(db.dbname)
+        except NotFoundError:
+            pass
+        es.indices.create(db.dbname)
+        for doc in documents:
+            es.index(
+                index=db.dbname,
+                doc_type=document_class.__name__,
+                id=doc._id,
+                body=doc._doc
+            )
+
+    def __get_db_url(self, app_name):
+        for database in self.databases:
+            name, url = database
+            if name == app_name:
+                return url
+        return None
+
 def syncdb(app, created_models, **kwargs):
     """ function used by syncdb signal """
     handler = Handler(
@@ -59,6 +88,20 @@ def syncdb(app, created_models, **kwargs):
         getattr(settings, "COUCHDB_USER", None),
         getattr(settings, "COUCHDB_PASSWORD", None),
     )
+
+    # sync views of CouchDB
     handler.sync(app)
+
+    # re-index
+    from document import Document
+    for name, cls in inspect.getmembers(sys.modules[app.__name__]):
+        is_document = False
+        if name != 'Document':
+            try:
+                is_document = issubclass(cls, Document)
+            except:
+                pass
+        if is_document:
+            handler.re_index(app, cls)
 
 signals.post_syncdb.connect(syncdb)

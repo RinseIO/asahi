@@ -1,6 +1,6 @@
 from couchdbkit.ext import django as couchdb_ext_django
 del couchdb_ext_django.syncdb # delete couchdbkit.syncdb
-from django_ext import * # added asahi.syncdb for django
+import django_ext # added asahi.syncdb for django
 from couchdbkit.schema import DocumentBase
 from couchdbkit.ext.django.schema import DocumentMeta
 from couchdbkit.ext.django.loading import get_db
