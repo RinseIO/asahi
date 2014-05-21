@@ -36,6 +36,9 @@ class Document(DocumentBase):
         return query.intersect(member, **kwargs)
 
     def save(self, **params):
+        """
+        Save the document.
+        """
         super(Document, self).save(**params)
         es = utils.get_elasticsearch()
         es.index(
@@ -43,4 +46,16 @@ class Document(DocumentBase):
             doc_type=self.__class__.__name__,
             id=self._id,
             body=self._doc
+        )
+
+    def delete(self):
+        """
+        Delete the document.
+        """
+        super(Document, self).delete()
+        es = utils.get_elasticsearch()
+        es.delete(
+            index=self.get_db().dbname,
+            doc_type=self.__class__.__name__,
+            id=self._id,
         )
