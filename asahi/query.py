@@ -38,6 +38,10 @@ class Query(object):
             QueryCell(QueryOperation.all)
         ]
 
+
+    # -----------------------------------------------------
+    # The methods for appending the query.
+    # -----------------------------------------------------
     def intersect(self, *args, **kwargs):
         """
         Intersect the query.
@@ -53,6 +57,7 @@ class Query(object):
             greater_equal,
             like,
         ]
+        :return: {asahi.query.Query}
         """
         if isinstance(args[0], basestring):
             # .and('member', equal='')
@@ -88,6 +93,7 @@ class Query(object):
             greater_equal,
             like,
         ]
+        :return: {asahi.query.Query}
         """
         if isinstance(args[0], basestring):
             # .or('member', equal='')
@@ -108,11 +114,32 @@ class Query(object):
             ))
         return self
 
-    def fetch(self):
+    def order_by(self, member, descending=False):
+        if descending:
+            operation_code = QueryOperation.order_desc
+        else:
+            operation_code = QueryOperation.order_asc
+        self.items.append(QueryCell(
+            operation_code,
+            member=member
+        ))
+        return self
+
+
+    # -----------------------------------------------------
+    # The methods for fetch documents by the query.
+    # -----------------------------------------------------
+    def fetch(self, limit=1000, skip=0):
+        """
+        Fetch documents from the query.
+        :param limit: {int} The size of the pagination. (The limit of the result items.)
+        :param skip: {int} The offset of the pagination. (Skip x items.)
+        :return: {list} The documents.
+        """
         es = utils.get_elasticsearch()
         search_result = es.search(
             self.document.get_db().dbname,
-            body=self.__compile_queries(self.items),
+            body=self.__compile_queries(self.items, limit, skip),
         )
         result = []
         for hits in search_result['hits']['hits']:
@@ -120,30 +147,46 @@ class Query(object):
         return result
 
 
-    def __compile_queries(self, queries):
+    # -----------------------------------------------------
+    # Private methods.
+    # -----------------------------------------------------
+    def __compile_queries(self, queries, limit, skip):
         """
         Compile asahi queries to the elasticsearch query.
         :param queries: {list} The asahi queries.
         :return: {dict} The elasticsearch query.
         """
         should_items = []
+        sort_items = []
         for query in queries:
             if query.sub_queries:
                 # compile sub queries
                 pass
             else:
-                if query.operation & QueryOperation.intersection == QueryOperation.intersection:
+                if query.operation & QueryOperation.intersection is QueryOperation.intersection:
                     # intersect
                     should_items.append(self.__compile_query_operation(query))
+                elif query.operation & QueryOperation.order_asc is QueryOperation.order_asc:
+                    sort_items.append({
+                        query.member: {'order': 'asc', 'mode': 'avg'}
+                    })
+                elif query.operation & QueryOperation.order_desc is QueryOperation.order_desc:
+                    sort_items.append({
+                        query.member: {'order': 'desc', 'mode': 'avg'}
+                    })
 
         result = {
+            'from': skip,
+            'size': limit,
             'fields': ['_source'],
-            'query': {
+            'sort': sort_items,
+        }
+        if len(should_items):
+            result['query'] = {
                 'bool': {
                     'should': should_items
                 }
             }
-        }
         return result
     def __compile_query_operation(self, query):
         """
@@ -152,7 +195,7 @@ class Query(object):
         :return: {dict} The elasticsearch query.
         """
         operation = query.operation & QueryOperation.normal_operation_mask
-        if operation & QueryOperation.equal == QueryOperation.equal:
+        if operation & QueryOperation.equal is QueryOperation.equal:
             return {
                 'match': {
                     query.member: query.value

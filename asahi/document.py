@@ -34,9 +34,18 @@ class Document(DocumentBase):
             greater_equal,
             like,
         ]
+        :return: {asahi.query.Query}
         """
         query = Query(cls)
         return query.intersect(member, **kwargs)
+
+    @classmethod
+    def all(cls):
+        """
+        The query for all documents.
+        :return: {asahi.query.Query}
+        """
+        return Query(cls)
 
     def save(self, **params):
         """
@@ -50,6 +59,7 @@ class Document(DocumentBase):
             id=self._id,
             body=self._doc
         )
+        es.indices.flush()
 
     def delete(self):
         """
@@ -62,3 +72,4 @@ class Document(DocumentBase):
             doc_type=self.__class__.__name__,
             id=self._id,
         )
+        es.indices.flush()
