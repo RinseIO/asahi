@@ -24,6 +24,7 @@ class Handler(object):
                 break
         if db_url is None:
             return
+        print('sync `%s` in CouchDB' % app_name)
 
         # get server and db
         server_uri, db_name = db_url.rsplit("/", 1)
@@ -51,11 +52,8 @@ class Handler(object):
             pass
         db.save_doc(doc, force_update=True)
 
-def syncdb(app, created_models, verbosity=2, **kwargs):
+def syncdb(app, created_models, **kwargs):
     """ function used by syncdb signal """
-    if app.__name__ != 'banners.models':
-        return
-
     handler = Handler(
         getattr(settings, "COUCHDB_DATABASES", []),
         getattr(settings, "COUCHDB_USER", None),
