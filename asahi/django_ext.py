@@ -44,11 +44,12 @@ class Handler(object):
             '_id': doc_id,
         }
         try:
-            doc = db.open_doc(doc_id)
-            doc['_rev'] = doc['_rev']
+            old_doc = db.open_doc(doc_id)
+            doc['_rev'] = old_doc['_rev']
         except ResourceNotFound:
             pass
-        db.save_doc(doc, force_update=True)
+        db.save_doc(doc)
+
 
     def re_index(self, app, document_class):
         es = utils.get_elasticsearch()
