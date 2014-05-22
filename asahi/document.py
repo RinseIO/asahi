@@ -21,6 +21,24 @@ class Document(DocumentBase):
         return db
 
     @classmethod
+    def get(cls, ids, rev=None, db=None, dynamic_properties=True):
+        """
+        Get documents by ids.
+        :param ids: {list or string} The documents' id.
+        :return: {list or Document}
+        """
+        if isinstance(ids, list):
+            if db is None:
+                db = cls.get_db()
+            return db.view(
+                '%s/id' % db.dbname,
+                keys=ids,
+                schema=cls
+            ).all()
+        else:
+            return super(Document, cls).get(ids, rev, db, dynamic_properties)
+
+    @classmethod
     def where(cls, member, **kwargs):
         """
         The where query.
