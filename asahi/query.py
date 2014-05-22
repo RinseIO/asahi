@@ -10,12 +10,13 @@ class QueryOperation(object):
     greater = 0x004
     greater_equal = 0x005
     like = 0x010 # only for string
+    among = 0x020 # it is mean `in`
 
-    intersection = 0x020
-    union = 0x040
-    all = 0x080
-    order_asc = 0x100
-    order_desc = 0x200
+    intersection = 0x040
+    union = 0x080
+    all = 0x100
+    order_asc = 0x200
+    order_desc = 0x400
 
 
 class QueryCell(object):
@@ -278,6 +279,14 @@ class Query(object):
                     query.member: '.*%s.*' % query.value
                 }
             }
+        elif operation & QueryOperation.among == QueryOperation.among:
+            if not len(query.value):
+                return None
+            return {
+                'bool': {
+                    'should': [{'match': {query.member: x}} for x in query.value],
+                }
+            }
 
     def __parse_operation(self, **kwargs):
         """
@@ -301,4 +310,6 @@ class Query(object):
             return QueryOperation.greater_equal, kwargs['greater_equal']
         elif 'like' in keys:
             return QueryOperation.like, kwargs['like']
+        elif 'among' in keys:
+            return QueryOperation.among, kwargs['among']
         return None, None
