@@ -115,6 +115,12 @@ class Query(object):
         return self
 
     def order_by(self, member, descending=False):
+        """
+        Append the order query.
+        :param member: {string} The property name of the document.
+        :param descending: {bool} Is sorted by descending.
+        :return: {asahi.query.Query}
+        """
         if descending:
             operation_code = QueryOperation.order_desc
         else:
@@ -131,7 +137,7 @@ class Query(object):
     # -----------------------------------------------------
     def fetch(self, limit=1000, skip=0):
         """
-        Fetch documents from the query.
+        Fetch documents by the query.
         :param limit: {int} The size of the pagination. (The limit of the result items.)
         :param skip: {int} The offset of the pagination. (Skip x items.)
         :return: {list} The documents.
@@ -139,22 +145,54 @@ class Query(object):
         es = utils.get_elasticsearch()
         search_result = es.search(
             self.document.get_db().dbname,
-            body=self.__compile_queries(self.items, limit, skip),
+            body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
         )
         result = []
         for hits in search_result['hits']['hits']:
             result.append(self.document.wrap(hits['_source']))
         return result
 
+    def count(self):
+        """
+        Count documents by the query.
+        :return: {int}
+        """
+        query, sort = self.__compile_queries(self.items)
+        es = utils.get_elasticsearch()
+        if query is None:
+            count_result = es.count(self.document.get_db().dbname)
+        else:
+            count_result = es.count(
+                self.document.get_db().dbname,
+                body={
+                    'query': query
+                },
+            )
+        return count_result['count']
+
 
     # -----------------------------------------------------
     # Private methods.
     # -----------------------------------------------------
-    def __compile_queries(self, queries, limit, skip):
+    def __generate_elasticsearch_search_body(self, queries, limit=None, skip=None):
+        es_query, sort_items = self.__compile_queries(queries)
+        result = {
+            'from': skip,
+            'size': limit,
+            'fields': ['_source'],
+            'sort': sort_items,
+        }
+        if es_query is not None:
+            result['query'] = es_query
+        return result
+
+    def __compile_queries(self, queries):
         """
-        Compile asahi queries to the elasticsearch query.
-        :param queries: {list} The asahi queries.
-        :return: {dict} The elasticsearch query.
+        Compile asahi query cells to the elastic search query.
+        :param queries: {list} The asahi query cells.
+        :return: {dict or None}, {list}
+            The elastic search query dict.
+            The elastic search sort list.
         """
         should_items = []
         sort_items = []
@@ -175,19 +213,15 @@ class Query(object):
                         query.member: {'order': 'desc', 'mode': 'avg'}
                     })
 
-        result = {
-            'from': skip,
-            'size': limit,
-            'fields': ['_source'],
-            'sort': sort_items,
-        }
         if len(should_items):
-            result['query'] = {
+            query = {
                 'bool': {
                     'should': should_items
                 }
             }
-        return result
+        else:
+            query = None
+        return query, sort_items
     def __compile_query_operation(self, query):
         """
         Parse the asahi query operation to elasticsearch query.
