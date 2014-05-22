@@ -140,7 +140,9 @@ class Query(object):
         Fetch documents by the query.
         :param limit: {int} The size of the pagination. (The limit of the result items.)
         :param skip: {int} The offset of the pagination. (Skip x items.)
-        :return: {list} The documents.
+        :returns: {list}, {int}
+            The documents.
+            The total items.
         """
         es = utils.get_elasticsearch()
         search_result = es.search(
@@ -150,7 +152,7 @@ class Query(object):
         result = []
         for hits in search_result['hits']['hits']:
             result.append(self.document.wrap(hits['_source']))
-        return result
+        return result, search_result['hits']['total']
 
     def count(self):
         """
@@ -175,6 +177,13 @@ class Query(object):
     # Private methods.
     # -----------------------------------------------------
     def __generate_elasticsearch_search_body(self, queries, limit=None, skip=None):
+        """
+        Generate the elastic search search body.
+        :param queries: {list} The asahi query items.
+        :param limit: {int} The limit of the result items.
+        :param skip: {int} Skip x items.
+        :return: {dict} The elastic search search body
+        """
         es_query, sort_items = self.__compile_queries(queries)
         result = {
             'from': skip,
@@ -190,7 +199,7 @@ class Query(object):
         """
         Compile asahi query cells to the elastic search query.
         :param queries: {list} The asahi query cells.
-        :return: {dict or None}, {list}
+        :returns: {dict or None}, {list}
             The elastic search query dict.
             The elastic search sort list.
         """
@@ -233,6 +242,12 @@ class Query(object):
             return {
                 'match': {
                     query.member: query.value
+                }
+            }
+        elif operation & QueryOperation.like is QueryOperation.like:
+            return {
+                'regexp': {
+                    query.member: '.*%s.*' % query.value
                 }
             }
 
