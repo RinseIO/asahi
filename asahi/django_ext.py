@@ -34,7 +34,7 @@ class Handler(object):
         db = server.get_or_create_db(db_name)
 
         # save _design
-        doc_id = '_design/%s' % app_name
+        doc_id = '_design/%s' % db_name
         doc = {
             'views': {
                 'id': {
@@ -51,13 +51,12 @@ class Handler(object):
         db.save_doc(doc)
 
 
-    def re_index(self, app, document_class):
+    def re_index(self, document_class):
         es = utils.get_elasticsearch()
-        app_name = app.__name__.rsplit('.', 1)[0]
         db = document_class.get_db()
         print('re-index `%s` in ElasticSearch' % db.dbname)
         documents = db.view(
-            '%s/id' % app_name,
+            '%s/id' % db.dbname,
             schema=document_class,
             wrapper=None,
             wrap_doc=True,
@@ -103,6 +102,6 @@ def syncdb(app, created_models, **kwargs):
             except:
                 pass
         if is_document:
-            handler.re_index(app, cls)
+            handler.re_index(cls)
 
 signals.post_syncdb.connect(syncdb)
