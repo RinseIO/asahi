@@ -154,6 +154,17 @@ class Query(object):
             result.append(self.document.wrap(hits['_source']))
         return result, search_result['hits']['total']
 
+    def first(self):
+        """
+        Fetch the first document.
+        :return: {asahi.document.Document or None}
+        """
+        documents, total = self.fetch(1, 0)
+        if total == 0:
+            return None
+        else:
+            return documents[0]
+
     def count(self):
         """
         Count documents by the query.
@@ -210,16 +221,16 @@ class Query(object):
                 # compile sub queries
                 pass
             else:
-                if query.operation & QueryOperation.intersection is QueryOperation.intersection:
+                if query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
                     should_items.append(self.__compile_query_operation(query))
-                elif query.operation & QueryOperation.order_asc is QueryOperation.order_asc:
+                elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
                     sort_items.append({
-                        query.member: {'order': 'asc', 'mode': 'avg'}
+                        query.member: {'order': 'asc'}
                     })
-                elif query.operation & QueryOperation.order_desc is QueryOperation.order_desc:
+                elif query.operation & QueryOperation.order_desc == QueryOperation.order_desc:
                     sort_items.append({
-                        query.member: {'order': 'desc', 'mode': 'avg'}
+                        query.member: {'order': 'desc'}
                     })
 
         if len(should_items):
@@ -238,13 +249,13 @@ class Query(object):
         :return: {dict} The elasticsearch query.
         """
         operation = query.operation & QueryOperation.normal_operation_mask
-        if operation & QueryOperation.equal is QueryOperation.equal:
+        if operation & QueryOperation.equal == QueryOperation.equal:
             return {
                 'match': {
                     query.member: query.value
                 }
             }
-        elif operation & QueryOperation.like is QueryOperation.like:
+        elif operation & QueryOperation.like == QueryOperation.like:
             return {
                 'regexp': {
                     query.member: '.*%s.*' % query.value
