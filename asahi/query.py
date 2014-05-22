@@ -9,12 +9,10 @@ class QueryOperation(object):
     less_equal = 0x003
     greater = 0x004
     greater_equal = 0x005
-    # empty 0x10U
-    # empty 0x20U
-    like = 0x030 # only for string
+    like = 0x010 # only for string
 
-    intersection = 0x040
-    union = 0x000
+    intersection = 0x020
+    union = 0x040
     all = 0x080
     order_asc = 0x100
     order_desc = 0x200
@@ -42,6 +40,11 @@ class Query(object):
     # -----------------------------------------------------
     # The methods for appending the query.
     # -----------------------------------------------------
+    def where(self, *args, **kwargs):
+        """
+        It is intersect.
+        """
+        return self.intersect(*args, **kwargs)
     def intersect(self, *args, **kwargs):
         """
         Intersect the query.
@@ -214,8 +217,9 @@ class Query(object):
             The elastic search query dict.
             The elastic search sort list.
         """
-        should_items = []
         sort_items = []
+        necessary_items = []
+        optional_items = []
         for query in queries:
             if query.sub_queries:
                 # compile sub queries
@@ -223,7 +227,14 @@ class Query(object):
             else:
                 if query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
-                    should_items.append(self.__compile_query_operation(query))
+                    query_item = self.__compile_normal_query_operation(query)
+                    if query_item:
+                        necessary_items.append(query_item)
+                elif query.operation & QueryOperation.union == QueryOperation.union:
+                    # union
+                    query_item = self.__compile_normal_query_operation(query)
+                    if query_item:
+                        optional_items.append(query_item)
                 elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
                     sort_items.append({
                         query.member: {'order': 'asc'}
@@ -232,21 +243,27 @@ class Query(object):
                     sort_items.append({
                         query.member: {'order': 'desc'}
                     })
-
-        if len(should_items):
+        if len(necessary_items):
+            optional_items.append({
+                'bool': {
+                    'should': necessary_items,
+                    'minimum_should_match': len(necessary_items),
+                }
+            })
+        if len(optional_items):
             query = {
                 'bool': {
-                    'should': should_items
+                    'should': optional_items,
                 }
             }
         else:
             query = None
         return query, sort_items
-    def __compile_query_operation(self, query):
+    def __compile_normal_query_operation(self, query):
         """
-        Parse the asahi query operation to elasticsearch query.
+        Parse the asahi query operation to elastic search query.
         :param query: The asahi query.
-        :return: {dict} The elasticsearch query.
+        :return: {dict} The elastic search query.
         """
         operation = query.operation & QueryOperation.normal_operation_mask
         if operation & QueryOperation.equal == QueryOperation.equal:

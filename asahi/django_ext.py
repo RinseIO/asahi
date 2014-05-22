@@ -22,10 +22,10 @@ class Handler(object):
         db_url = self.__get_db_url(app_name)
         if db_url is None:
             return
-        print('sync `%s` in CouchDB' % app_name)
 
         # get server and db
         server_uri, db_name = db_url.rsplit("/", 1)
+        print('sync `%s` in CouchDB' % db_name)
         if self.auth:
             res = CouchdbResource(server_uri, filters=[self.auth])
         else:
