@@ -234,7 +234,9 @@ class Query(object):
                 elif query.operation & QueryOperation.union == QueryOperation.union:
                     # union
                     query_item = self.__compile_normal_query_operation(query)
-                    if query_item:
+                    if query_item and len(necessary_items):
+                        necessary_item = necessary_items.pop()
+                        optional_items.append(necessary_item)
                         optional_items.append(query_item)
                 elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
                     sort_items.append({
@@ -255,6 +257,7 @@ class Query(object):
             query = {
                 'bool': {
                     'should': optional_items,
+                    'minimum_should_match': 1,
                 }
             }
         else:
@@ -270,13 +273,30 @@ class Query(object):
         if operation & QueryOperation.equal == QueryOperation.equal:
             return {
                 'match': {
-                    query.member: query.value
+                    query.member: {
+                        'query': query.value,
+                        'operator': 'and',
+                    }
                 }
             }
         elif operation & QueryOperation.like == QueryOperation.like:
             return {
-                'regexp': {
-                    query.member: '.*%s.*' % query.value
+                'bool': {
+                    'should': [
+                        {
+                            'match': {
+                                query.member: {
+                                    'query': query.value,
+                                    'operator': 'and',
+                                }
+                            }
+                        },
+                        {
+                            'regexp': {
+                                query.member: '.*%s.*' % query.value
+                            }
+                        },
+                    ]
                 }
             }
         elif operation & QueryOperation.among == QueryOperation.among:
@@ -284,7 +304,7 @@ class Query(object):
                 return None
             return {
                 'bool': {
-                    'should': [{'match': {query.member: x}} for x in query.value],
+                    'should': [{'match': {query.member: {'query': x, 'operator': 'and'}}} for x in query.value],
                 }
             }
 
