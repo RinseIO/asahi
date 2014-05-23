@@ -39,10 +39,12 @@ class Document(DocumentBase):
             return super(Document, cls).get(ids, rev, db, dynamic_properties)
 
     @classmethod
-    def where(cls, member, **kwargs):
+    def where(cls, *args, **kwargs):
         """
-        The where query.
-        :param member: The member's name of the document.
+        Intersect the query.
+        :param args:
+            The member's name of the document or
+                the sub queries' lambda function.
         :param kwargs: [
             unequal,
             equal,
@@ -51,11 +53,12 @@ class Document(DocumentBase):
             greater,
             greater_equal,
             like,
+            among,
         ]
         :return: {asahi.query.Query}
         """
         query = Query(cls)
-        return query.intersect(member, **kwargs)
+        return query.intersect(*args, **kwargs)
 
     @classmethod
     def all(cls):

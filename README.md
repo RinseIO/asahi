@@ -44,6 +44,153 @@ documents = SampleModel.get([
         '7ccecde23f7bf67b2b6586f9917c259c',
     ])
 ```
+```python
+def where(cls, *args, **kwargs):
+    """
+    Intersect the query.
+    :param args:
+        The member's name of the document or
+            the sub queries' lambda function.
+    :param kwargs: [
+        unequal,
+        equal,
+        less,
+        less_equal,
+        greater,
+        greater_equal,
+        like,
+        among,
+    ]
+    :return: {asahi.query.Query}
+    """
+```
+```python
+def all(cls):
+    """
+    The query for all documents.
+    :return: {asahi.query.Query}
+    """
+```
+```python
+def save(self, **params):
+    """
+    Save the document.
+    """
+```
+```python
+def delete(self):
+    """
+    Delete the document.
+    """
+```
+
+
+
+##Query
+>The asahi query.
+
+**Methods**
+>```python
+def where(self, *args, **kwargs):
+    """
+    Intersect the query.
+    :param args:
+        The member's name of the document or
+            the sub queries' lambda function.
+    :param kwargs: [
+        unequal,
+        equal,
+        less,
+        less_equal,
+        greater,
+        greater_equal,
+        like,
+        among,
+    ]
+    :return: {asahi.query.Query}
+    """
+```
+```python
+def order_by(self, member, descending=False):
+    """
+    Append the order query.
+    :param member: {string} The property name of the document.
+    :param descending: {bool} Is sorted by descending.
+    :return: {asahi.query.Query}
+    """
+```
+```python
+def fetch(self, limit=1000, skip=0):
+    """
+    Fetch documents by the query.
+    :param limit: {int} The size of the pagination. (The limit of the result items.)
+    :param skip: {int} The offset of the pagination. (Skip x items.)
+    :returns: {list}, {int}
+        The documents.
+        The total items.
+    """
+```
+```python
+def first(self):
+    """
+    Fetch the first document.
+    :return: {asahi.document.Document or None}
+    """
+```
+```python
+def count(self):
+    """
+    Count documents by the query.
+    :return: {int}
+    """
+```
+
+
+
+##Examples
+>```sql
+select * from "ExampleModel" where "name" = "asahi"
+```
+```python
+models, total = ExampleModel.where('name', equal='asahi').fetch()
+```
+
+---
+>```sql
+select * from "ExampleModel" where "name" like "%asahi%" or "email" like "%asahi%"
+```
+```python
+models, total = ExampleModel.where(lambda x:
+    x.where('name', like='asahi')
+    .union('email', like='asahi')
+).fetch()
+```
+
+---
+>```sql
+select * from "ExampleModel" where "category" = 1 or "category" = 3 order by "created_at" limit 20 offset 20
+```
+```python
+models, total = ExampleModel.where('category', among=[1, 3]).order_by('created_at').fetch(20, 20)
+```
+
+---
+>Fetch the first item.
+```sql
+select * from "ExampleModel" where "age" >= 10 order by "created_at" desc limit 1
+```
+```python
+model = ExampleModel.where('age', greater_equal=10).order_by('created_at', descending=True).first()
+```
+
+---
+>Count items.
+```sql
+select count(*) from "ExampleModel" where "age" < 10
+```
+```python
+count = ExampleModel.where('age', less=10).count()
+```
 
 
 

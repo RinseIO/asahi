@@ -60,6 +60,7 @@ class Query(object):
             greater,
             greater_equal,
             like,
+            among,
         ]
         :return: {asahi.query.Query}
         """
@@ -96,6 +97,7 @@ class Query(object):
             greater,
             greater_equal,
             like,
+            among,
         ]
         :return: {asahi.query.Query}
         """
