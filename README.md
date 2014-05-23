@@ -238,5 +238,12 @@ $ pip install -r pip_requirements.txt
 
 
 
+##unit-test
+>```bash
+$ python test.py
+```
+
+
+
 ##References
 >+ [elasticsearch-queries](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-queries.html)

@@ -4,3 +4,7 @@ restkit>=4.2.2
 
 # elasticsearch-py
 urllib3>=1.8
+
+# unit-test
+mock>=1.0.1
+django>=1.5
