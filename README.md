@@ -168,19 +168,23 @@ models, total = ExampleModel.where(lambda x:
 
 ---
 >```sql
-select * from "ExampleModel" where "category" = 1 or "category" = 3 order by "created_at" limit 20 offset 20
+select * from "ExampleModel" where "category" = 1 or "category" = 3
+        order by "created_at" limit 20 offset 20
 ```
 ```python
-models, total = ExampleModel.where('category', among=[1, 3]).order_by('created_at').fetch(20, 20)
+models, total = ExampleModel.where('category', among=[1, 3])\
+        .order_by('created_at').fetch(20, 20)
 ```
 
 ---
 >Fetch the first item.
 ```sql
-select * from "ExampleModel" where "age" >= 10 order by "created_at" desc limit 1
+select * from "ExampleModel" where "age" >= 10
+         order by "created_at" desc limit 1
 ```
 ```python
-model = ExampleModel.where('age', greater_equal=10).order_by('created_at', descending=True).first()
+model = ExampleModel.where('age', greater_equal=10)\
+        .order_by('created_at', descending=True).first()
 ```
 
 ---
