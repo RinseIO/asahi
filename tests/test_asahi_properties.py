@@ -38,4 +38,3 @@ class TestAsahiProperties(unittest.TestCase):
         self.assertIs(properties.SchemaDictProperty, schema.SchemaDictProperty)
     def test_asahi_properties_set_property(self):
         self.assertIs(properties.SetProperty, schema.SetProperty)
-        
