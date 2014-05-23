@@ -157,6 +157,16 @@ models, total = ExampleModel.where('name', equal='asahi').fetch()
 
 ---
 >```sql
+select * from "ExampleModel" where "name" = "asahi" and "email" = "asahi@rinse.io"
+```
+```python
+models, total = ExampleModel.where('name', equal='asahi')\
+        .where('email', equal='asahi@rinse.io')\
+        .fetch()
+```
+
+---
+>```sql
 select * from "ExampleModel" where "name" like "%asahi%" or "email" like "%asahi%"
 ```
 ```python

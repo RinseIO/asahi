@@ -276,16 +276,7 @@ class Query(object):
         :return: {dict} The elastic search query.
         """
         operation = query.operation & QueryOperation.normal_operation_mask
-        if operation & QueryOperation.equal == QueryOperation.equal:
-            return {
-                'match': {
-                    query.member: {
-                        'query': query.value,
-                        'operator': 'and',
-                    }
-                }
-            }
-        elif operation & QueryOperation.like == QueryOperation.like:
+        if operation & QueryOperation.like == QueryOperation.like:
             return {
                 'bool': {
                     'should': [
@@ -311,6 +302,60 @@ class Query(object):
             return {
                 'bool': {
                     'should': [{'match': {query.member: {'query': x, 'operator': 'and'}}} for x in query.value],
+                }
+            }
+        elif operation & QueryOperation.greater_equal == QueryOperation.greater_equal:
+            return {
+                'range': {
+                    query.member: {
+                        'gte': query.value
+                    }
+                }
+            }
+        elif operation & QueryOperation.greater == QueryOperation.greater:
+            return {
+                'range': {
+                    query.member: {
+                        'gt': query.value
+                    }
+                }
+            }
+        elif operation & QueryOperation.less_equal == QueryOperation.less_equal:
+            return {
+                'range': {
+                    query.member: {
+                        'lte': query.value
+                    }
+                }
+            }
+        elif operation & QueryOperation.less == QueryOperation.less:
+            return {
+                'range': {
+                    query.member: {
+                        'lt': query.value
+                    }
+                }
+            }
+        elif operation & QueryOperation.equal == QueryOperation.equal:
+            return {
+                'match': {
+                    query.member: {
+                        'query': query.value,
+                        'operator': 'and',
+                    }
+                }
+            }
+        elif operation & QueryOperation.unequal == QueryOperation.unequal:
+            return {
+                'bool': {
+                    'must_not': {
+                        'match': {
+                            query.member: {
+                                'query': query.value,
+                                'operator': 'and',
+                            }
+                        }
+                    }
                 }
             }
 
