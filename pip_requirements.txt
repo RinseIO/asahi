@@ -1,1 +1,7 @@
+# couchdbkit
 ujson>=1.33
+restkit>=4.2.2
+
+# elasticsearch-py
+elasticsearch>=1.0.0
+urllib3>=1.8
