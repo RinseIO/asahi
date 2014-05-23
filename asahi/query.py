@@ -221,23 +221,27 @@ class Query(object):
         sort_items = []
         necessary_items = []
         optional_items = []
+        last_item_is_necessary = False
         for query in queries:
             if query.sub_queries:
                 # compile sub queries
-                pass
+                return self.__compile_queries(query.sub_queries)
             else:
                 if query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
                     query_item = self.__compile_normal_query_operation(query)
                     if query_item:
                         necessary_items.append(query_item)
+                        last_item_is_necessary = True
                 elif query.operation & QueryOperation.union == QueryOperation.union:
                     # union
                     query_item = self.__compile_normal_query_operation(query)
-                    if query_item and len(necessary_items):
-                        necessary_item = necessary_items.pop()
-                        optional_items.append(necessary_item)
+                    if query_item:
+                        if last_item_is_necessary:
+                            necessary_item = necessary_items.pop()
+                            optional_items.append(necessary_item)
                         optional_items.append(query_item)
+                        last_item_is_necessary = False
                 elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
                     sort_items.append({
                         query.member: {'order': 'asc'}
