@@ -245,5 +245,15 @@ $ python test.py
 
 
 
+##django manage.py
+>```bash
+# sync CouchDB's views
+$ python manage.py syncdb
+# delete ElasticSearch all indices than add from CouchDB
+$ python manage.py reindex
+```
+
+
+
 ##References
 >+ [elasticsearch-queries](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-queries.html)

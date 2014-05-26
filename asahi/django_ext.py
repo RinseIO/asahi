@@ -51,7 +51,23 @@ class Handler(object):
         db.save_doc(doc)
 
 
-    def re_index(self, document_class):
+    def re_index(self, document_class=None):
+        from document import Document
+        if document_class is None:
+            # re-index all indices
+            for app in settings.INSTALLED_APPS:
+                if "django" not in app:
+                    for name, cls in inspect.getmembers(sys.modules['%s.models' % app]):
+                        is_document = False
+                        try:
+                            if issubclass(cls, Document) and name != 'Document':
+                                is_document = True
+                        except:
+                            pass
+                        if is_document:
+                            self.re_index(cls)
+            return
+
         es = utils.get_elasticsearch()
         db = document_class.get_db()
         print('re-index `%s` in ElasticSearch' % db.dbname)
@@ -91,17 +107,5 @@ def syncdb(app, created_models, **kwargs):
 
     # sync views of CouchDB
     handler.sync(app)
-
-    # re-index
-    from document import Document
-    for name, cls in inspect.getmembers(sys.modules[app.__name__]):
-        is_document = False
-        if name != 'Document':
-            try:
-                is_document = issubclass(cls, Document)
-            except:
-                pass
-        if is_document:
-            handler.re_index(cls)
 
 signals.post_syncdb.connect(syncdb)
