@@ -250,6 +250,7 @@ $ python test.py
 >```bash
 $ python manage.py syncdb
 ```
+
 ###re-index ElasticSearch
 >```bash
 delete ElasticSearch all indices than add from CouchDB
