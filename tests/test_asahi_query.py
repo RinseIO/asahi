@@ -1,5 +1,7 @@
 import unittest
+from mock import MagicMock
 from asahi.query import QueryOperation, QueryCell, Query
+from asahi.document import Document
 
 
 class TestAsahiQueryOperation(unittest.TestCase):
@@ -48,3 +50,9 @@ class TestAsahiQuery(unittest.TestCase):
         self.assertEqual(query.document, 'document')
         self.assertEqual(len(query.items), 1)
         self.assertEqual(query.items[0].operation, QueryOperation.all)
+
+    def test_asahi_query_where(self):
+        query = Query(Document)
+        query.intersect = MagicMock()
+        query.where('email', equal='kelp@rinse.io')
+        query.intersect.assert_called_with('email', equal='kelp@rinse.io')
