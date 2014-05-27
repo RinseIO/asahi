@@ -98,7 +98,6 @@ class TestAsahiQuery(unittest.TestCase):
                                  .union('nickname', equal='kelp')
         )
         es_query, sort_list = self.query._Query__compile_queries(query.items)
-        print(es_query)
         self.assertDictEqual(es_query, {
             'bool': {
                 'minimum_should_match': 1,
