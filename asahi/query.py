@@ -231,13 +231,13 @@ class Query(object):
             else:
                 if query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
-                    query_item = self.__compile_normal_query_operation(query)
+                    query_item = self.__compile_query(query)
                     if query_item:
                         necessary_items.append(query_item)
                         last_item_is_necessary = True
                 elif query.operation & QueryOperation.union == QueryOperation.union:
                     # union
-                    query_item = self.__compile_normal_query_operation(query)
+                    query_item = self.__compile_query(query)
                     if query_item:
                         if last_item_is_necessary:
                             necessary_item = necessary_items.pop()
@@ -269,10 +269,10 @@ class Query(object):
         else:
             query = None
         return query, sort_items
-    def __compile_normal_query_operation(self, query):
+    def __compile_query(self, query):
         """
-        Parse the asahi query operation to elastic search query.
-        :param query: The asahi query.
+        Parse the asahi query cell to elastic search query.
+        :param query: The asahi query cell.
         :return: {dict} The elastic search query.
         """
         operation = query.operation & QueryOperation.normal_operation_mask
