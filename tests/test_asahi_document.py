@@ -76,3 +76,40 @@ class TestAsahiDocument(unittest.TestCase):
         self.fake_query.assert_called_once_with(Document)
         self.assertEqual(query, 'query')
         map(lambda x: x.stop(), self.patches)
+
+    def test_asahi_document_save(self):
+        document = Document()
+        fake_es = MagicMock()
+        self.patches = [
+            patch('asahi.utils.get_elasticsearch', new=fake_es),
+        ]
+        document.get_db = MagicMock()
+        document.get_db().dbname = 'db_name'
+        map(lambda x: x.start(), self.patches)
+        document.save()
+        fake_es().index.assert_called_with(
+            index='db_name',
+            doc_type='Document',
+            id=None,
+            body={'doc_type': 'Document'},
+        )
+        fake_es().indices.flush.assert_called()
+        map(lambda x: x.stop(), self.patches)
+
+    def test_asahi_document_delete(self):
+        document = Document.wrap({'_id': '4689f7addaedc3d52a9688722c3e595b', '_rev': '1-4689f7addaedc3d52a9688722c3e595b'})
+        fake_es = MagicMock()
+        self.patches = [
+            patch('asahi.utils.get_elasticsearch', new=fake_es),
+        ]
+        document.get_db = MagicMock()
+        document.get_db().dbname = 'db_name'
+        map(lambda x: x.start(), self.patches)
+        document.delete()
+        fake_es().delete.assert_called_with(
+            index='db_name',
+            doc_type='Document',
+            id=None,
+        )
+        fake_es().indices.flush.assert_called()
+        map(lambda x: x.stop(), self.patches)
