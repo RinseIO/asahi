@@ -274,5 +274,29 @@ class Command(BaseCommand):
 
 
 
+##Note
+>Asahi supports CouchDB's last version 1.5.1.  
+But there are issues about ElasticSearch.  
+If your OS X is 10.9.3, your default Java is 1.6. ElasticSearch 1.2.0 required Java 1.7.
+Run ElasticSearch 1.2.0 on Java 1.6 will pop the message like this:
+```
+ Exception in thread "main" java.lang.UnsupportedClassVersionError: org/elasticsearch/bootstrap/Elasticsearch : Unsupported major.minor version 51.0
+ at java.lang.ClassLoader.defineClass1(Native Method)
+ at java.lang.ClassLoader.defineClassCond(ClassLoader.java:631)
+ at java.lang.ClassLoader.defineClass(ClassLoader.java:615)
+ at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:141)
+ at java.net.URLClassLoader.defineClass(URLClassLoader.java:283)
+ at java.net.URLClassLoader.access$000(URLClassLoader.java:58)
+ at java.net.URLClassLoader$1.run(URLClassLoader.java:197)
+ at java.security.AccessController.doPrivileged(Native Method)
+ at java.net.URLClassLoader.findClass(URLClassLoader.java:190)
+ at java.lang.ClassLoader.loadClass(ClassLoader.java:306)
+ at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:301)
+ at java.lang.ClassLoader.loadClass(ClassLoader.java:247)
+Could not find the main class: org.elasticsearch.bootstrap.Elasticsearch.  Program will exit.
+```
+
+
+
 ##References
 >+ [elasticsearch-queries](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-queries.html)
