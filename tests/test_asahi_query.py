@@ -1,5 +1,5 @@
 import unittest
-from mock import MagicMock
+from mock import MagicMock, patch
 from asahi.query import QueryOperation, QueryCell, Query
 from asahi.document import Document
 
@@ -57,6 +57,58 @@ class TestAsahiQuery(unittest.TestCase):
         self.query.intersect = MagicMock()
         self.query.where('email', equal='kelp@rinse.io')
         self.query.intersect.assert_called_with('email', equal='kelp@rinse.io')
+
+    def test_asahi_query_fetch(self):
+        fake_es = MagicMock()
+        fake_es().search.return_value = {
+            'hits': {
+                'hits': [],
+                'total': 0
+            }
+        }
+        self.patches = [
+            patch('asahi.utils.get_elasticsearch', new=fake_es),
+        ]
+        map(lambda x: x.start(), self.patches)
+        self.query.document.get_db = MagicMock()
+        self.query.document.get_db().dbname = 'db_name'
+        self.query.fetch()
+        fake_es().search.assert_called_with(
+            'db_name',
+            body={'sort': [], 'fields': ['_source'], 'from': 0, 'size': 1000}
+        )
+        map(lambda x: x.stop(), self.patches)
+
+    def test_asahi_query_first_none(self):
+        self.query.fetch = MagicMock()
+        self.query.fetch.return_value = tuple([[], 0])
+        item = self.query.first()
+        self.query.fetch.assert_called_with(1, 0)
+        self.assertIsNone(item)
+    def test_asahi_query_first(self):
+        self.query.fetch = MagicMock()
+        self.query.fetch.return_value = tuple([[{'_id': '4689f7addaedc3d52a9688722c3e595b', '_rev': '1-4689f7addaedc3d52a9688722c3e595b'}], 1])
+        item = self.query.first()
+        self.query.fetch.assert_called_with(1, 0)
+        self.assertDictEqual(item, {
+            '_id': '4689f7addaedc3d52a9688722c3e595b',
+            '_rev': '1-4689f7addaedc3d52a9688722c3e595b',
+        })
+
+    def test_asahi_query__generate_elasticsearch_search_body_all(self):
+        query = self.query.order_by('time')
+        result = self.query._Query__generate_elasticsearch_search_body(query.items, 1000, 0)
+        self.assertDictEqual(result, {
+            'sort': [{'time': {'order': 'asc'}}], 'fields': ['_source'], 'from': 0, 'size': 1000
+        })
+    def test_asahi_query__generate_elasticsearch_search_body_where(self):
+        query = self.query.where('name', equal='kelp')
+        result = self.query._Query__generate_elasticsearch_search_body(query.items, 1000, 0)
+        self.assertDictEqual(result, {
+            'sort': [], 'fields': ['_source'], 'from': 0, 'size': 1000,
+            'query': {'bool': {'minimum_should_match': 1,
+                               'should': [{'bool': {'minimum_should_match': 1,'should': [{'match': {'name': {'operator': 'and', 'query': 'kelp'}}}]}}]}},
+        })
 
     def test_asahi_query__compile_queries_order_by_asc(self):
         query = self.query.order_by('time')
