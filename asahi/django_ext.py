@@ -57,7 +57,11 @@ class Handler(object):
             # re-index all indices
             for app in settings.INSTALLED_APPS:
                 if "django" not in app:
-                    for name, cls in inspect.getmembers(sys.modules['%s.models' % app]):
+                    try:
+                        members = inspect.getmembers(sys.modules['%s.models' % app])
+                    except:
+                        continue
+                    for name, cls in members:
                         is_document = False
                         try:
                             if issubclass(cls, Document) and name != 'Document':
