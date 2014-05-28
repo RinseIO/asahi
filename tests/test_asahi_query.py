@@ -99,7 +99,7 @@ class TestAsahiQuery(unittest.TestCase):
         query = self.query.order_by('time')
         result = self.query._Query__generate_elasticsearch_search_body(query.items, 1000, 0)
         self.assertDictEqual(result, {
-            'sort': [{'time': {'order': 'asc'}}], 'fields': ['_source'], 'from': 0, 'size': 1000
+            'sort': [{'time': {'order': 'asc', 'ignore_unmapped': True, 'missing': '_first'}}], 'fields': ['_source'], 'from': 0, 'size': 1000
         })
     def test_asahi_query__generate_elasticsearch_search_body_where(self):
         query = self.query.where('name', equal='kelp')
@@ -114,13 +114,25 @@ class TestAsahiQuery(unittest.TestCase):
         query = self.query.order_by('time')
         es_query, sort_list = self.query._Query__compile_queries(query.items)
         self.assertListEqual(sort_list, [
-            {'time': {'order': 'asc'}}
+            {
+                'time': {
+                    'order': 'asc',
+                    'ignore_unmapped': True,
+                    'missing': '_first',
+                }
+            }
         ])
     def test_asahi_query__compile_queries_order_by_desc(self):
         query = self.query.order_by('time', descending=True)
         es_query, sort_list = self.query._Query__compile_queries(query.items)
         self.assertListEqual(sort_list, [
-            {'time': {'order': 'desc'}}
+            {
+                'time': {
+                    'order': 'desc',
+                    'ignore_unmapped': True,
+                    'missing': '_last',
+                }
+            }
         ])
     def test_asahi_query__compile_queries_intersection(self):
         query = self.query.where('name', equal='kelp')

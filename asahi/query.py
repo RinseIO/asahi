@@ -246,11 +246,19 @@ class Query(object):
                         last_item_is_necessary = False
                 elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
                     sort_items.append({
-                        query.member: {'order': 'asc'}
+                        query.member: {
+                            'order': 'asc',
+                            'ignore_unmapped': True,
+                            'missing': '_first',
+                        }
                     })
                 elif query.operation & QueryOperation.order_desc == QueryOperation.order_desc:
                     sort_items.append({
-                        query.member: {'order': 'desc'}
+                        query.member: {
+                            'order': 'desc',
+                            'ignore_unmapped': True,
+                            'missing': '_last',
+                        }
                     })
         if len(necessary_items):
             optional_items.append({
