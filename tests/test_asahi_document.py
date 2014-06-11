@@ -109,7 +109,7 @@ class TestAsahiDocument(unittest.TestCase):
         fake_es().delete.assert_called_with(
             index='db_name',
             doc_type='Document',
-            id=None,
+            id='4689f7addaedc3d52a9688722c3e595b',
         )
         fake_es().indices.flush.assert_called()
         map(lambda x: x.stop(), self.patches)

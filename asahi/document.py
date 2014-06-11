@@ -86,7 +86,6 @@ class Document(DocumentBase):
         """
         Delete the document.
         """
-        super(Document, self).delete()
         es = utils.get_elasticsearch()
         es.delete(
             index=self.get_db().dbname,
@@ -94,3 +93,4 @@ class Document(DocumentBase):
             id=self._id,
         )
         es.indices.flush()
+        super(Document, self).delete()
