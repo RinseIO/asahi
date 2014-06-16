@@ -1,0 +1,20 @@
+machine:
+    python:
+        version:
+            2.7.5
+
+    hosts:
+        circlehost: 127.0.0.1
+        bonbonchic.com.tw: 127.0.0.1
+
+    environment:
+        CIRCLE_ENV: test
+
+dependencies:
+    pre:
+        - git submodule update --init
+        - pip install -r pip_requirements.txt
+
+test:
+    override:
+        - python test.py
