@@ -1,4 +1,5 @@
 from couchdbkit.ext import django as couchdb_ext_django
+from couchdbkit.exceptions import ResourceNotFound
 del couchdb_ext_django.syncdb # delete couchdbkit.syncdb
 import django_ext # added asahi.syncdb for django
 from couchdbkit.schema import DocumentBase
@@ -36,7 +37,10 @@ class Document(DocumentBase):
                 schema=cls
             ).all()
         else:
-            return super(Document, cls).get(ids, rev, db, dynamic_properties)
+            try:
+                return super(Document, cls).get(ids, rev, db, dynamic_properties)
+            except ResourceNotFound:
+                return None
 
     @classmethod
     def where(cls, *args, **kwargs):
