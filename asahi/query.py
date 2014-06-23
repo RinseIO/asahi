@@ -345,14 +345,25 @@ class Query(object):
                 }
             }
         elif operation & QueryOperation.equal == QueryOperation.equal:
-            return {
-                'match': {
-                    query.member: {
-                        'query': query.value,
-                        'operator': 'and',
+            if query.value is None:
+                return {
+                    'filtered': {
+                        'filter': {
+                            'missing': {
+                                'field': query.member
+                            }
+                        }
                     }
                 }
-            }
+            else:
+                return {
+                    'match': {
+                        query.member: {
+                            'query': query.value,
+                            'operator': 'and',
+                        }
+                    }
+                }
         elif operation & QueryOperation.unequal == QueryOperation.unequal:
             return {
                 'bool': {
