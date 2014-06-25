@@ -1,4 +1,4 @@
-#asahi
+#asahi ![circle-ci](https://circleci.com/gh/RinseIO/asahi.png?circle-token=31b839a690302dd8cbf4c7eee52f63b82ea53cd4)
 
 A database library for CouchDB and ElasticSearch.
 
