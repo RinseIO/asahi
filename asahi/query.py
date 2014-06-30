@@ -19,6 +19,18 @@ class QueryOperation(object):
     order_desc = 0x400
 
 
+class FacetType(object):
+    terms_facet = 0x000
+    range_facets = 0x001
+    histogram_facets = 0x002
+    date_histogram_facet = 0x003
+    date_histogram_facet = 0x004
+    filter_facets = 0x005
+    statistical_facets = 0x006
+    terms_stats_facets = 0x007
+    geo_distance_facets = 0x008
+
+
 class QueryCell(object):
     def __init__(self, operation, member=None, value=None, sub_queries=None):
         self.member = member
@@ -27,12 +39,19 @@ class QueryCell(object):
         self.sub_queries = sub_queries
 
 
+class FacetCell(object):
+    def __init__(self, operation, member=None, value=None):
+        self.member = member
+        self.operation = operation
+        self.value = value
+
 class Query(object):
     """
     An asahi query object.
     """
     def __init__(self, document):
         self.document = document
+        self.facets = []
         self.items = [
             QueryCell(QueryOperation.all)
         ]
@@ -139,6 +158,17 @@ class Query(object):
 
 
     # -----------------------------------------------------
+    # The methods for adding facets.
+    # -----------------------------------------------------
+    def terms_facet(self, *args, **kwargs):
+        facet = FacetCell(FacetType.terms_facet, args[0], kwargs)
+        self.facets.append(facet)
+
+    def range_facets(self, *args, **kwargs):
+        facet = FacetCell(FacetType.range_facets, args[0], kwargs)
+        self.facets.append(facet)
+
+    # -----------------------------------------------------
     # The methods for fetch documents by the query.
     # -----------------------------------------------------
     def fetch(self, limit=1000, skip=0):
@@ -156,6 +186,7 @@ class Query(object):
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
         )
         result = []
+        print search_result
         for hits in search_result['hits']['hits']:
             result.append(self.document.wrap(hits['_source']))
         return result, search_result['hits']['total']
@@ -202,6 +233,7 @@ class Query(object):
         :return: {dict} The elastic search search body
         """
         es_query, sort_items = self.__compile_queries(queries)
+        facets = self.__generate_facet_body()
         result = {
             'from': skip,
             'size': limit,
@@ -210,6 +242,9 @@ class Query(object):
         }
         if es_query is not None:
             result['query'] = es_query
+
+        if facets is not None:
+            result['facets'] = facets
         return result
 
     def __compile_queries(self, queries):
@@ -377,6 +412,25 @@ class Query(object):
                     }
                 }
             }
+
+    def __generate_facet_body(self):
+        if not len(self.facets):
+            return None
+
+        def ___get_facet_operation_key(operation):
+            if operation == FacetType.terms_facet:
+                return 'terms'
+            elif operation == FacetType.range_facets:
+                return 'range'
+            else:
+                return None
+
+        facets = {}
+        for facet in self.facets:
+            facets[facet.member] = {
+                ___get_facet_operation_key(facet.operation): facet.value
+            }
+        return facets
 
     def __parse_operation(self, **kwargs):
         """
