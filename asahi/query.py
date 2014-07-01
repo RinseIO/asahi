@@ -52,6 +52,7 @@ class Query(object):
     def __init__(self, document):
         self.document = document
         self.facets = []
+        self.facets_result = None
         self.items = [
             QueryCell(QueryOperation.all)
         ]
@@ -186,10 +187,14 @@ class Query(object):
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
         )
         result = []
-        print search_result
+        if len(self.facets) > 0:
+            self.facets_result = search_result['facets']
         for hits in search_result['hits']['hits']:
             result.append(self.document.wrap(hits['_source']))
         return result, search_result['hits']['total']
+
+    def fetch_facets_result(self):
+        return self.facets_result
 
     def first(self):
         """
