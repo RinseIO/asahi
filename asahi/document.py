@@ -28,6 +28,8 @@ class Document(DocumentBase):
         :param ids: {list or string} The documents' id.
         :return: {list or Document}
         """
+        if ids is None:
+            return None
         if isinstance(ids, list):
             if db is None:
                 db = cls.get_db()
