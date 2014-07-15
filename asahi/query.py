@@ -405,18 +405,33 @@ class Query(object):
                     }
                 }
         elif operation & QueryOperation.unequal == QueryOperation.unequal:
-            return {
-                'bool': {
-                    'must_not': {
-                        'match': {
-                            query.member: {
-                                'query': query.value,
-                                'operator': 'and',
+            if query.value is None:
+                return {
+                    'bool': {
+                        'must_not': {
+                            'filtered': {
+                                'filter': {
+                                    'missing': {
+                                        'field': query.member
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
+            else:
+                return {
+                    'bool': {
+                        'must_not': {
+                            'match': {
+                                query.member: {
+                                    'query': query.value,
+                                    'operator': 'and',
+                                }
+                            }
+                        }
+                    }
+                }
 
     def __generate_facet_body(self):
         if not len(self.facets):
