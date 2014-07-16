@@ -44,12 +44,12 @@ class TestAsahiDocument(unittest.TestCase):
         ]
         map(lambda x: x.start(), self.patches)
         documents = Document.get(['id'])
-        Document.get_db.assert_called()
+        Document.get_db.assert_any_call()
         Document.get_db().view.assert_called_with(
             'dbname/id',
             keys=['id'],
             schema=Document)
-        Document.get_db().view().all.assert_called()
+        Document.get_db().view().all.assert_any_call()
         self.assertEqual(documents, 'all')
         map(lambda x: x.stop(), self.patches)
 
@@ -93,7 +93,7 @@ class TestAsahiDocument(unittest.TestCase):
             id=None,
             body={'doc_type': 'Document'},
         )
-        fake_es().indices.flush.assert_called()
+        fake_es().indices.flush.assert_any_call()
         map(lambda x: x.stop(), self.patches)
 
     def test_asahi_document_delete(self):
@@ -111,5 +111,5 @@ class TestAsahiDocument(unittest.TestCase):
             doc_type='Document',
             id='4689f7addaedc3d52a9688722c3e595b',
         )
-        fake_es().indices.flush.assert_called()
+        fake_es().indices.flush.assert_any_call()
         map(lambda x: x.stop(), self.patches)
