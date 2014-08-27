@@ -260,7 +260,11 @@ class Query(object):
         for query in queries:
             if query.sub_queries:
                 # compile sub queries
-                return self.__compile_queries(query.sub_queries)
+                sub_query, sub_sort_items = self.__compile_queries(query.sub_queries)
+                if query.operation & QueryOperation.intersection == QueryOperation.intersection:
+                    # intersect
+                    necessary_items.append(sub_query)
+                    last_item_is_necessary = True
             else:
                 if query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
