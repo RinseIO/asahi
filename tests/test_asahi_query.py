@@ -166,19 +166,28 @@ class TestAsahiQuery(unittest.TestCase):
             'bool': {
                 'minimum_should_match': 1,
                 'should': [{
-                    'match': {
-                        'name': {
-                            'operator': 'and',
-                            'query': 'kelp'
-                        }
-                    }
-                },
-                {
-                    'match': {
-                        'nickname': {
-                            'operator': 'and',
-                            'query': 'kelp'
-                        }
+                    'bool': {
+                        'minimum_should_match': 1,
+                        'should': [{
+                            'bool': {
+                                'minimum_should_match': 1,
+                                'should': [{
+                                    'match': {
+                                        'name': {
+                                            'operator': 'and',
+                                            'query': 'kelp'
+                                        }
+                                    }
+                                }, {
+                                    'match': {
+                                        'nickname': {
+                                            'operator': 'and',
+                                            'query': 'kelp'
+                                        }
+                                    }
+                                }]
+                            }
+                        }]
                     }
                 }]
             }
