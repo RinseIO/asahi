@@ -22,13 +22,6 @@ class QueryOperation(object):
 class FacetType(object):
     terms_facet = 0x000
     range_facets = 0x001
-    histogram_facets = 0x002
-    date_histogram_facet = 0x003
-    date_histogram_facet = 0x004
-    filter_facets = 0x005
-    statistical_facets = 0x006
-    terms_stats_facets = 0x007
-    geo_distance_facets = 0x008
 
 
 class QueryCell(object):
