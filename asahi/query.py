@@ -342,8 +342,6 @@ class Query(object):
                 }
             }
         elif operation & QueryOperation.among == QueryOperation.among:
-            if not len(query.value):
-                return None
             return {
                 'bool': {
                     'should': [{'match': {query.member: {'query': x, 'operator': 'and'}}} for x in query.value],
