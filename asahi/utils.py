@@ -8,8 +8,7 @@ def get_elasticsearch():
     Get the connection for ElasticSearch.
     :return: {Elasticsearch}
     """
-    url = urlparse(get_elasticsearch_url())
-    return elasticsearch.Elasticsearch(url.hostname, port=url.port)
+    return elasticsearch.Elasticsearch(get_elasticsearch_url())
 
 def get_elasticsearch_url():
     """
