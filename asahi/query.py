@@ -1,3 +1,4 @@
+from django.conf import settings
 import utils
 
 
@@ -42,8 +43,8 @@ class Query(object):
     """
     An asahi query object.
     """
-    def __init__(self, document):
-        self.document = document
+    def __init__(self, document_class):
+        self.document_class = document_class
         self.facets = []
         self.facets_result = None
         self.items = [
@@ -89,7 +90,7 @@ class Query(object):
         else:
             # .and(lambda x: x.where())
             func = args[0]
-            queries = func(self.document).items
+            queries = func(self.document_class).items
             self.items.append(QueryCell(
                 QueryOperation.intersection,
                 sub_queries=queries
@@ -126,7 +127,7 @@ class Query(object):
         else:
             # .or(lambda x: x.where())
             func = args[0]
-            queries = func(self.document).items
+            queries = func(self.document_class).items
             self.items.append(QueryCell(
                 QueryOperation.union,
                 sub_queries=queries
@@ -176,14 +177,15 @@ class Query(object):
         """
         es = utils.get_elasticsearch()
         search_result = es.search(
-            self.document.get_db().dbname,
+            '%s%s' % (getattr(settings, 'ASAHI_DB_PREFIX', ''), self.document_class.__name__.lower()),
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
+            version=True
         )
         result = []
         if len(self.facets) > 0:
             self.facets_result = search_result['facets']
         for hits in search_result['hits']['hits']:
-            result.append(self.document.wrap(hits['_source']))
+            result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
         return result, search_result['hits']['total']
 
     def fetch_facets_result(self):
@@ -208,10 +210,10 @@ class Query(object):
         query, sort = self.__compile_queries(self.items)
         es = utils.get_elasticsearch()
         if query is None:
-            count_result = es.count(self.document.get_db().dbname)
+            count_result = es.count(self.document_class.get_db().dbname)
         else:
             count_result = es.count(
-                self.document.get_db().dbname,
+                self.document_class.get_db().dbname,
                 body={
                     'query': query
                 },

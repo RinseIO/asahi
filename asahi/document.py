@@ -5,6 +5,7 @@ import django_ext # added asahi.syncdb for django
 from couchdbkit.schema import DocumentBase
 from couchdbkit.ext.django.schema import DocumentMeta
 from couchdbkit.ext.django.loading import get_db
+from django.conf import settings
 from query import Query
 import utils
 from .properties import Property, StringProperty, LongProperty
@@ -18,7 +19,7 @@ class Document(object):
     _id = StringProperty()
     _version = LongProperty()
 
-    def __new__(cls, *args):
+    def __new__(cls, *args, **kwargs):
         cls._properties = {}
         for attribute_name in dir(cls):
             if attribute_name.startswith('__'):
@@ -94,27 +95,37 @@ class Document(object):
         """
         return Query(cls)
 
-    def save(self, **params):
+    def save(self, is_synchronized=False):
         """
         Save the document.
         """
         es = utils.get_elasticsearch()
-        es.index(
-            index=self.get_db().dbname,
+        if self._version is None:
+            self._version = 0L
+        document = self._document.copy()
+        del document['_id']
+        del document['_version']
+        result = es.index(
+            index='%s%s' % (getattr(settings, 'ASAHI_DB_PREFIX', ''), self.__class__.__name__.lower()),
             doc_type=self.__class__.__name__,
             id=self._id,
-            body=self._doc
+            version=self._version,
+            body=document
         )
-        es.indices.flush()
+        self._id = result.get('_id')
+        self._version = result.get('_version')
+        if is_synchronized:
+            es.indices.flush()
 
-    def delete(self):
+    def delete(self, is_synchronized=False):
         """
         Delete the document.
         """
         es = utils.get_elasticsearch()
         es.delete(
-            index=self.get_db().dbname,
+            index='%s%s' % (getattr(settings, 'ASAHI_DB_PREFIX', ''), self.__class__.__name__.lower()),
             doc_type=self.__class__.__name__,
             id=self._id,
         )
-        es.indices.flush()
+        if is_synchronized:
+            es.indices.flush()

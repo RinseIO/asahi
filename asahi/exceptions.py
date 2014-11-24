@@ -1,4 +1,8 @@
-from couchdbkit import exceptions
+from elasticsearch import exceptions
 
-
-ResourceConflict = exceptions.ResourceConflict
+class BadValueError(Exception):
+    """
+    exception raised when a value can't be validated or is required
+    """
+ConflictError = exceptions.ConflictError
+ResourceConflict = exceptions.ConflictError

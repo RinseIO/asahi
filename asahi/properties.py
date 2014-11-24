@@ -1,4 +1,5 @@
 from couchdbkit import schema
+from .exceptions import BadValueError
 
 
 class Property(object):
@@ -15,10 +16,15 @@ class Property(object):
         value = document_instance._document.get(self.name)
         if value is None:
             return value
-        return self.__to_python(value)
+        return self._to_python(value)
 
     def __set__(self, document_instance, value):
-        document_instance._document[self.name] = self.__to_json(value)
+        if value is None:
+            if self.is_required:
+                raise BadValueError('%s is required' % self.name)
+            document_instance._document[self.name] = None
+        else:
+            document_instance._document[self.name] = self._to_json(value)
 
     def __property_config__(self, document_class, property_name):
         """
@@ -31,34 +37,32 @@ class Property(object):
         if self.name is None:
             self.name = property_name
 
-    def __to_python(self, value):
+    def _to_python(self, value):
         """
         Convert the value to Python format.
         :param value:
         :return:
         """
         return unicode(value)
-    def __to_json(self, value):
+    def _to_json(self, value):
         """
         Convert the value to ElasticSearch format.
         :param value:
         :return:
         """
-        if value is None:
-            return value
         return unicode(value)
 
 class StringProperty(Property):
-    __to_python = unicode
-    __to_json = unicode
+    _to_python = unicode
+    _to_json = unicode
 
 class IntegerProperty(Property):
-    __to_python = int
-    __to_json = int
+    _to_python = int
+    _to_json = int
 
 class LongProperty(Property):
-    __to_python = long
-    __to_json = long
+    _to_python = long
+    _to_json = long
 
 
 # Property = schema.Property

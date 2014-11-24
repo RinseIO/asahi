@@ -1,4 +1,3 @@
-from urlparse import urlparse
 from django.conf import settings
 import elasticsearch
 
