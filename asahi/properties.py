@@ -1,3 +1,4 @@
+from datetime import datetime
 from couchdbkit import schema
 from .exceptions import BadValueError
 
@@ -64,16 +65,48 @@ class LongProperty(Property):
     _to_python = long
     _to_json = long
 
+class FloatProperty(Property):
+    _to_python = float
+    _to_json = float
+
+class BooleanProperty(Property):
+    _to_python = bool
+    _to_json = bool
+
+class DateTimeProperty(Property):
+    def __init__(self, is_auto_now=False, *args, **kwargs):
+        super(DateTimeProperty, self).__init__(*args, **kwargs)
+        self.is_auto_now = is_auto_now
+
+    def _to_python(self, value):
+        """
+        Convert value to python format.
+        :param value: {datetime}, {string}
+        :return: {datetime}
+        """
+        if isinstance(value, basestring):
+            try:
+                value = value.split('.', 1)[0] # strip out microseconds
+                value = value[0:19] # remove timezone
+                value = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
+            except ValueError, e:
+                raise ValueError('Invalid ISO date/time %r [%s]' % (value, str(e)))
+        return value
+    def _to_json(self, value):
+        """
+        Convert value to json format.
+        :param value: {datetime}, {string}
+        :return: {string}
+        """
+        if isinstance(value, basestring):
+            return value
+        return value.replace(microsecond=0).isoformat() + 'Z'
+
 
 # Property = schema.Property
 DecimalProperty = schema.DecimalProperty
-BooleanProperty = schema.BooleanProperty
-FloatProperty = schema.FloatProperty
-DateTimeProperty = schema.DateTimeProperty
 DateProperty = schema.DateProperty
 TimeProperty = schema.TimeProperty
-SchemaProperty = schema.SchemaProperty
-SchemaListProperty = schema.SchemaListProperty
 ListProperty = schema.ListProperty
 DictProperty = schema.DictProperty
 StringDictProperty = schema.StringDictProperty

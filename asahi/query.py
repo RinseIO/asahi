@@ -176,7 +176,7 @@ class Query(object):
         """
         es = utils.get_elasticsearch()
         search_result = es.search(
-            index=self.document_class._index_name,
+            index=self.document_class.get_index_name(),
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
             version=True
         )
@@ -209,10 +209,10 @@ class Query(object):
         query, sort = self.__compile_queries(self.items)
         es = utils.get_elasticsearch()
         if query is None:
-            count_result = es.count(self.document_class._index_name)
+            count_result = es.count(self.document_class.get_index_name())
         else:
             count_result = es.count(
-                index=self.document_class._index_name,
+                index=self.document_class.get_index_name(),
                 body={
                     'query': query
                 },

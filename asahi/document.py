@@ -1,6 +1,7 @@
+from datetime import datetime
 from query import Query
 import utils
-from .properties import Property, StringProperty, LongProperty
+from .properties import Property, StringProperty, LongProperty, DateTimeProperty
 from .exceptions import NotFoundError
 
 
@@ -16,7 +17,6 @@ class Document(object):
     _version = LongProperty()
 
     def __new__(cls, *args, **kwargs):
-        cls._index_name = '%s%s' % (utils.get_index_prefix(), cls.__name__.lower())
         cls._properties = {}
         for attribute_name in dir(cls):
             if attribute_name.startswith('__'):
@@ -33,10 +33,15 @@ class Document(object):
         argument_keys = kwargs.keys()
         for property_name, property in self._properties.items():
             if property_name in argument_keys:
-                self._document[property_name] = kwargs[property_name]
+                setattr(self, property_name, kwargs[property_name])
             else:
-                self._document[property_name] = property.default
+                setattr(self, property_name, property.default)
 
+    @classmethod
+    def get_index_name(cls):
+        if not hasattr(cls, '_index_name') or not cls._index_name:
+            cls._index_name = '%s%s' % (utils.get_index_prefix(), cls.__name__.lower())
+        return cls._index_name
 
     @classmethod
     def get(cls, ids):
@@ -51,7 +56,7 @@ class Document(object):
         if isinstance(ids, list):
             # fetch documents
             result = es.mget(
-                index=cls._index_name,
+                index=cls.get_index_name(),
                 doc_type=cls.__name__,
                 body={
                     'ids': ids
@@ -62,7 +67,7 @@ class Document(object):
         # fetch the document
         try:
             result = es.get(
-                index=cls._index_name,
+                index=cls.get_index_name(),
                 doc_type=cls.__name__,
                 id=ids,
             )
@@ -107,11 +112,14 @@ class Document(object):
         es = utils.get_elasticsearch()
         if self._version is None:
             self._version = 0L
+        for property_name, property in self._properties.items():
+            if isinstance(property, DateTimeProperty) and property.is_auto_now and not getattr(self, property_name):
+                setattr(self, property_name, datetime.utcnow())
         document = self._document.copy()
         del document['_id']
         del document['_version']
         result = es.index(
-            index=self._index_name,
+            index=self.get_index_name(),
             doc_type=self.__class__.__name__,
             id=self._id,
             version=self._version,
@@ -131,7 +139,7 @@ class Document(object):
 
         es = utils.get_elasticsearch()
         es.delete(
-            index=self._index_name,
+            index=self.get_index_name(),
             doc_type=self.__class__.__name__,
             id=self._id,
         )
