@@ -16,7 +16,7 @@ class Property(object):
 
         value = document_instance._document.get(self.name)
         if value is None:
-            return value
+            return None
         return self._to_python(value)
 
     def __set__(self, document_instance, value):
@@ -102,12 +102,23 @@ class DateTimeProperty(Property):
             return value
         return value.replace(microsecond=0).isoformat() + 'Z'
 
+class ListProperty(Property):
+    def __init__(self, item_type, *args, **kwargs):
+        super(ListProperty, self).__init__(*args, **kwargs)
+        if item_type is str or item_type is basestring:
+            item_type = unicode
+        if not isinstance(item_type, type):
+            raise TypeError('Item type should be a type object')
+        if item_type not in [unicode, int, long]:
+            raise ValueError('Item type %s is not acceptable' % item_type.__name__)
+        self.item_type = item_type
+
+    def _to_python(self, value):
+        return [self.item_type(x) for x in value]
+    def _to_json(self, value):
+        return [self.item_type(x) for x in value]
 
 # Property = schema.Property
-DecimalProperty = schema.DecimalProperty
-DateProperty = schema.DateProperty
-TimeProperty = schema.TimeProperty
-ListProperty = schema.ListProperty
 DictProperty = schema.DictProperty
 StringDictProperty = schema.StringDictProperty
 StringListProperty = schema.StringListProperty
