@@ -128,7 +128,7 @@ class Document(object):
         self._id = result.get('_id')
         self._version = result.get('_version')
         if is_synchronized:
-            es.indices.flush()
+            es.indices.flush(index=self.get_index_name())
 
     def delete(self, is_synchronized=False):
         """
@@ -144,4 +144,4 @@ class Document(object):
             id=self._id,
         )
         if is_synchronized:
-            es.indices.flush()
+            es.indices.flush(index=self.get_index_name())
