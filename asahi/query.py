@@ -1,4 +1,3 @@
-from django.conf import settings
 import utils
 
 
@@ -177,7 +176,7 @@ class Query(object):
         """
         es = utils.get_elasticsearch()
         search_result = es.search(
-            '%s%s' % (getattr(settings, 'ASAHI_DB_PREFIX', ''), self.document_class.__name__.lower()),
+            '%s%s' % (utils.get_index_prefix(), self.document_class.__name__.lower()),
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
             version=True
         )

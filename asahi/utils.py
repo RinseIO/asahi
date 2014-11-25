@@ -15,3 +15,10 @@ def get_elasticsearch_url():
     :return: {string}
     """
     return getattr(settings, 'ELASTICSEARCH_URL', 'http://localhost:9200')
+
+def get_index_prefix():
+    """
+
+    :return: {string}
+    """
+    return getattr(settings, 'ASAHI_DB_PREFIX', '')

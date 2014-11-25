@@ -5,7 +5,6 @@ import django_ext # added asahi.syncdb for django
 from couchdbkit.schema import DocumentBase
 from couchdbkit.ext.django.schema import DocumentMeta
 from couchdbkit.ext.django.loading import get_db
-from django.conf import settings
 from query import Query
 import utils
 from .properties import Property, StringProperty, LongProperty
@@ -106,7 +105,7 @@ class Document(object):
         del document['_id']
         del document['_version']
         result = es.index(
-            index='%s%s' % (getattr(settings, 'ASAHI_DB_PREFIX', ''), self.__class__.__name__.lower()),
+            index='%s%s' % (utils.get_index_prefix(), self.__class__.__name__.lower()),
             doc_type=self.__class__.__name__,
             id=self._id,
             version=self._version,
@@ -123,7 +122,7 @@ class Document(object):
         """
         es = utils.get_elasticsearch()
         es.delete(
-            index='%s%s' % (getattr(settings, 'ASAHI_DB_PREFIX', ''), self.__class__.__name__.lower()),
+            index='%s%s' % (utils.get_index_prefix(), self.__class__.__name__.lower()),
             doc_type=self.__class__.__name__,
             id=self._id,
         )
