@@ -5,4 +5,4 @@ class BadValueError(Exception):
     exception raised when a value can't be validated or is required
     """
 ConflictError = exceptions.ConflictError
-ResourceConflict = exceptions.ConflictError
+NotFoundError = exceptions.NotFoundError

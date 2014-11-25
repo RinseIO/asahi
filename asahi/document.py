@@ -1,24 +1,22 @@
-from couchdbkit.ext import django as couchdb_ext_django
-from couchdbkit.exceptions import ResourceNotFound
-del couchdb_ext_django.syncdb # delete couchdbkit.syncdb
-import django_ext # added asahi.syncdb for django
-from couchdbkit.schema import DocumentBase
-from couchdbkit.ext.django.schema import DocumentMeta
-from couchdbkit.ext.django.loading import get_db
 from query import Query
 import utils
 from .properties import Property, StringProperty, LongProperty
+from .exceptions import NotFoundError
 
 
 class Document(object):
     """
+    :attribute _id: {string}
+    :attribute _version: {long}
     :attribute _document: {dict} {'property_name': (value)}
     :attribute _properties: {dict} {'property_name': {Property}}
+    :attribute _index_name: {string}
     """
     _id = StringProperty()
     _version = LongProperty()
 
     def __new__(cls, *args, **kwargs):
+        cls._index_name = '%s%s' % (utils.get_index_prefix(), cls.__name__.lower())
         cls._properties = {}
         for attribute_name in dir(cls):
             if attribute_name.startswith('__'):
@@ -40,29 +38,37 @@ class Document(object):
                 self._document[property_name] = property.default
 
 
+    @classmethod
+    def get(cls, ids):
+        """
+        Get documents by ids.
+        :param ids: {list or string} The documents' id.
+        :return: {list or Document}
+        """
+        if ids is None:
+            return None
+        es = utils.get_elasticsearch()
+        if isinstance(ids, list):
+            # fetch documents
+            result = es.mget(
+                index=cls._index_name,
+                doc_type=cls.__name__,
+                body={
+                    'ids': ids
+                },
+            )
+            return [cls(_id=x['_id'], _version=x['_version'], **x['_source']) for x in result['docs'] if x['found']]
 
-    # @classmethod
-    # def get(cls, ids, rev=None, db=None, dynamic_properties=True):
-    #     """
-    #     Get documents by ids.
-    #     :param ids: {list or string} The documents' id.
-    #     :return: {list or Document}
-    #     """
-    #     if ids is None:
-    #         return None
-    #     if isinstance(ids, list):
-    #         if db is None:
-    #             db = cls.get_db()
-    #         return db.view(
-    #             '%s/id' % db.dbname,
-    #             keys=ids,
-    #             schema=cls
-    #         ).all()
-    #     else:
-    #         try:
-    #             return super(Document, cls).get(ids, rev, db, dynamic_properties)
-    #         except ResourceNotFound:
-    #             return None
+        # fetch the document
+        try:
+            result = es.get(
+                index=cls._index_name,
+                doc_type=cls.__name__,
+                id=ids,
+            )
+            return cls(_id=result['_id'], _version=result['_version'], **result['_source'])
+        except NotFoundError:
+            return None
 
     @classmethod
     def where(cls, *args, **kwargs):
@@ -105,7 +111,7 @@ class Document(object):
         del document['_id']
         del document['_version']
         result = es.index(
-            index='%s%s' % (utils.get_index_prefix(), self.__class__.__name__.lower()),
+            index=self._index_name,
             doc_type=self.__class__.__name__,
             id=self._id,
             version=self._version,
@@ -120,9 +126,12 @@ class Document(object):
         """
         Delete the document.
         """
+        if not self._id:
+            return None
+
         es = utils.get_elasticsearch()
         es.delete(
-            index='%s%s' % (utils.get_index_prefix(), self.__class__.__name__.lower()),
+            index=self._index_name,
             doc_type=self.__class__.__name__,
             id=self._id,
         )
