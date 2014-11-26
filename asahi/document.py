@@ -55,14 +55,20 @@ class Document(object):
         es = utils.get_elasticsearch()
         if isinstance(ids, list):
             # fetch documents
-            result = es.mget(
+            response = es.mget(
                 index=cls.get_index_name(),
                 doc_type=cls.__name__,
                 body={
-                    'ids': ids
+                    'ids': list(set(ids))
                 },
             )
-            return [cls(_id=x['_id'], _version=x['_version'], **x['_source']) for x in result['docs'] if x['found']]
+            result_table = {x['_id']: x for x in response['docs'] if x['found']}
+            result = []
+            for id in ids:
+                document = result_table.get(id)
+                if document:
+                    result.append(cls(_id=document['_id'], _version=document['_version'], **document['_source']))
+            return result
 
         # fetch the document
         try:
