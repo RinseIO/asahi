@@ -8,4 +8,6 @@ if __name__ == '__main__':
     )
 
     tests = unittest.TestLoader().discover('tests')
-    unittest.TextTestRunner(verbosity=2).run(tests)
+    result = unittest.TextTestRunner(verbosity=2).run(tests)
+    if len(result.failures) or len(result.errors):
+        raise Exception()

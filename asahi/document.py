@@ -86,7 +86,7 @@ class Document(DocumentBase):
             id=self._id,
             body=self._doc
         )
-        es.indices.flush()
+        es.indices.flush(index=self.get_db().dbname)
 
     def delete(self):
         """
@@ -98,5 +98,5 @@ class Document(DocumentBase):
             doc_type=self.__class__.__name__,
             id=self._id,
         )
-        es.indices.flush()
+        es.indices.flush(index=self.get_db().dbname)
         super(Document, self).delete()

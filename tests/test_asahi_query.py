@@ -239,7 +239,7 @@ class TestAsahiQuery(unittest.TestCase):
             value=[],
         )
         result = self.query._Query__compile_query(query_cell)
-        self.assertIsNone(result)
+        self.assertDictEqual(result, {'bool': {'should': []}})
     def test_asahi_query__compile_query_greater_equal(self):
         query_cell = QueryCell(
             QueryOperation.greater_equal,
