@@ -1,4 +1,5 @@
-import utils
+from . import utils
+from .deep_query import update_reference_properties
 
 
 class QueryOperation(object):
@@ -19,11 +20,6 @@ class QueryOperation(object):
     order_desc = 0x400
 
 
-class FacetType(object):
-    terms_facet = 0x000
-    range_facets = 0x001
-
-
 class QueryCell(object):
     def __init__(self, operation, member=None, value=None, sub_queries=None):
         self.member = member
@@ -32,20 +28,12 @@ class QueryCell(object):
         self.sub_queries = sub_queries
 
 
-class FacetCell(object):
-    def __init__(self, operation, member=None, value=None):
-        self.member = member
-        self.operation = operation
-        self.value = value
-
 class Query(object):
     """
     An asahi query object.
     """
-    def __init__(self, document):
-        self.document = document
-        self.facets = []
-        self.facets_result = None
+    def __init__(self, document_class):
+        self.document_class = document_class
         self.items = [
             QueryCell(QueryOperation.all)
         ]
@@ -77,7 +65,7 @@ class Query(object):
         ]
         :return: {asahi.query.Query}
         """
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], str):
             # .and('member', equal='')
             member = args[0]
             operation_code, value = self.__parse_operation(**kwargs)
@@ -89,7 +77,7 @@ class Query(object):
         else:
             # .and(lambda x: x.where())
             func = args[0]
-            queries = func(self.document).items
+            queries = func(self.document_class).items
             self.items.append(QueryCell(
                 QueryOperation.intersection,
                 sub_queries=queries
@@ -114,7 +102,7 @@ class Query(object):
         ]
         :return: {asahi.query.Query}
         """
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], str):
             # .or('member', equal='')
             member = args[0]
             operation_code, value = self.__parse_operation(**kwargs)
@@ -126,7 +114,7 @@ class Query(object):
         else:
             # .or(lambda x: x.where())
             func = args[0]
-            queries = func(self.document).items
+            queries = func(self.document_class).items
             self.items.append(QueryCell(
                 QueryOperation.union,
                 sub_queries=queries
@@ -152,20 +140,9 @@ class Query(object):
 
 
     # -----------------------------------------------------
-    # The methods for adding facets.
-    # -----------------------------------------------------
-    def terms_facet(self, *args, **kwargs):
-        facet = FacetCell(FacetType.terms_facet, args[0], kwargs)
-        self.facets.append(facet)
-
-    def range_facets(self, *args, **kwargs):
-        facet = FacetCell(FacetType.range_facets, args[0], kwargs)
-        self.facets.append(facet)
-
-    # -----------------------------------------------------
     # The methods for fetch documents by the query.
     # -----------------------------------------------------
-    def fetch(self, limit=1000, skip=0):
+    def fetch(self, limit=1000, skip=0, is_fetch_reference=True):
         """
         Fetch documents by the query.
         :param limit: {int} The size of the pagination. (The limit of the result items.)
@@ -176,25 +153,23 @@ class Query(object):
         """
         es = utils.get_elasticsearch()
         search_result = es.search(
-            self.document.get_db().dbname,
+            index=self.document_class.get_index_name(),
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
+            version=True
         )
         result = []
-        if len(self.facets) > 0:
-            self.facets_result = search_result['facets']
         for hits in search_result['hits']['hits']:
-            result.append(self.document.wrap(hits['_source']))
+            result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
+        if is_fetch_reference:
+            update_reference_properties(result)
         return result, search_result['hits']['total']
 
-    def fetch_facets_result(self):
-        return self.facets_result
-
-    def first(self):
+    def first(self, is_fetch_reference=True):
         """
         Fetch the first document.
         :return: {asahi.document.Document or None}
         """
-        documents, total = self.fetch(1, 0)
+        documents, total = self.fetch(1, 0, is_fetch_reference=is_fetch_reference)
         if total == 0:
             return None
         else:
@@ -208,10 +183,10 @@ class Query(object):
         query, sort = self.__compile_queries(self.items)
         es = utils.get_elasticsearch()
         if query is None:
-            count_result = es.count(self.document.get_db().dbname)
+            count_result = es.count(self.document_class.get_index_name())
         else:
             count_result = es.count(
-                self.document.get_db().dbname,
+                index=self.document_class.get_index_name(),
                 body={
                     'query': query
                 },
@@ -231,7 +206,6 @@ class Query(object):
         :return: {dict} The elastic search search body
         """
         es_query, sort_items = self.__compile_queries(queries)
-        facets = self.__generate_facet_body()
         result = {
             'from': skip,
             'size': limit,
@@ -240,9 +214,6 @@ class Query(object):
         }
         if es_query is not None:
             result['query'] = es_query
-
-        if facets is not None:
-            result['facets'] = facets
         return result
 
     def __compile_queries(self, queries):
@@ -427,25 +398,6 @@ class Query(object):
                         }
                     }
                 }
-
-    def __generate_facet_body(self):
-        if not len(self.facets):
-            return None
-
-        def ___get_facet_operation_key(operation):
-            if operation == FacetType.terms_facet:
-                return 'terms'
-            elif operation == FacetType.range_facets:
-                return 'range'
-            else:
-                return None
-
-        facets = {}
-        for facet in self.facets:
-            facets[facet.member] = {
-                ___get_facet_operation_key(facet.operation): facet.value
-            }
-        return facets
 
     def __parse_operation(self, **kwargs):
         """

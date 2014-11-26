@@ -1,6 +1,3 @@
-[submodule "submodules/couchdbkit"]
-	path = submodules/couchdbkit
-	url = git@github.com:RinseIO/couchdbkit.git
 [submodule "submodules/elasticsearch-py"]
 	path = submodules/elasticsearch-py
-	url = https://github.com/elasticsearch/elasticsearch-py.git
+	url = https://github.com/RinseIO/elasticsearch-py.git
