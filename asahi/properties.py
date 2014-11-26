@@ -3,17 +3,17 @@ from .exceptions import BadValueError
 
 
 class Property(object):
-    def __init__(self, default=None, is_required=False):
+    def __init__(self, default=None, required=False):
         """
         Init the Property.
         :param default: The default value.
-        :param is_required: {bool} Is this failed required?
+        :param required: {bool} Is this failed required?
         :return:
         """
         self.document_class = None
         self.name = None
         self.default = default
-        self.is_required=is_required
+        self.required=required
 
     def __get__(self, document_instance, document_class):
         if document_instance is None:
@@ -26,7 +26,7 @@ class Property(object):
 
     def __set__(self, document_instance, value):
         if value is None:
-            if self.is_required:
+            if self.required:
                 raise BadValueError('%s is required' % self.name)
             document_instance._document[self.name] = None
         else:
@@ -75,9 +75,9 @@ class BooleanProperty(Property):
     _to_json = bool
 
 class DateTimeProperty(Property):
-    def __init__(self, is_auto_now=False, *args, **kwargs):
+    def __init__(self, auto_now=False, *args, **kwargs):
         super(DateTimeProperty, self).__init__(*args, **kwargs)
-        self.is_auto_now = is_auto_now
+        self.auto_now = auto_now
 
     @classmethod
     def _to_python(cls, value):
@@ -152,7 +152,7 @@ class ReferenceProperty(Property):
 
     def __set__(self, document_instance, value):
         if value is None:
-            if self.is_required:
+            if self.required:
                 raise BadValueError('%s is required' % self.name)
             document_instance._document[self.name] = None
             document_instance._reference_document[self.name] = None

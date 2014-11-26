@@ -28,14 +28,14 @@ def update_reference_properties(documents):
 
     # fetch documents
     for document_class, items in data_table.items():
-        for reference_document in document_class.get(list(items.keys()), is_fetch_reference=False):
+        for reference_document in document_class.get(list(items.keys()), fetch_reference=False):
             data_table[document_class][reference_document._id] = reference_document
 
     # update reference properties of documents
     for document in documents:
         for property in reference_properties:  # loop all reference properties in the document
             reference_document = data_table[property.reference_class].get(getattr(document, property.name))
-            if property.is_required and reference_document is None:
+            if property.required and reference_document is None:
                 logging.warning("There are a reference class can't mapping")
                 continue
             setattr(document, property.name, reference_document)

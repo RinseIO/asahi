@@ -46,7 +46,7 @@ class Document(object):
         return cls._index_name
 
     @classmethod
-    def get(cls, ids, is_fetch_reference=True):
+    def get(cls, ids, fetch_reference=True):
         """
         Get documents by ids.
         :param ids: {list or string} The documents' id.
@@ -70,7 +70,7 @@ class Document(object):
                 document = result_table.get(document_id)
                 if document:
                     result.append(cls(_id=document['_id'], _version=document['_version'], **document['_source']))
-            if is_fetch_reference:
+            if fetch_reference:
                 update_reference_properties(result)
             return result
 
@@ -82,7 +82,7 @@ class Document(object):
                 id=ids,
             )
             result = cls(_id=response['_id'], _version=response['_version'], **response['_source'])
-            if is_fetch_reference:
+            if fetch_reference:
                 update_reference_properties([result])
             return result
         except NotFoundError:
@@ -118,7 +118,7 @@ class Document(object):
         """
         return Query(cls)
 
-    def save(self, is_synchronized=False):
+    def save(self, synchronized=False):
         """
         Save the document.
         """
@@ -126,7 +126,7 @@ class Document(object):
         if self._version is None:
             self._version = 0
         for property_name, property in self._properties.items():
-            if isinstance(property, DateTimeProperty) and property.is_auto_now and not getattr(self, property_name):
+            if isinstance(property, DateTimeProperty) and property.auto_now and not getattr(self, property_name):
                 setattr(self, property_name, datetime.utcnow())
         document = self._document.copy()
         del document['_id']
@@ -140,11 +140,11 @@ class Document(object):
         )
         self._id = result.get('_id')
         self._version = result.get('_version')
-        if is_synchronized:
+        if synchronized:
             es.indices.refresh(index=self.get_index_name())
         return self
 
-    def delete(self, is_synchronized=False):
+    def delete(self, synchronized=False):
         """
         Delete the document.
         """
@@ -157,6 +157,6 @@ class Document(object):
             doc_type=self.__class__.__name__,
             id=self._id,
         )
-        if is_synchronized:
+        if synchronized:
             es.indices.refresh(index=self.get_index_name())
         return self

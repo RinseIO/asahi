@@ -142,7 +142,7 @@ class Query(object):
     # -----------------------------------------------------
     # The methods for fetch documents by the query.
     # -----------------------------------------------------
-    def fetch(self, limit=1000, skip=0, is_fetch_reference=True):
+    def fetch(self, limit=1000, skip=0, fetch_reference=True):
         """
         Fetch documents by the query.
         :param limit: {int} The size of the pagination. (The limit of the result items.)
@@ -160,16 +160,16 @@ class Query(object):
         result = []
         for hits in search_result['hits']['hits']:
             result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
-        if is_fetch_reference:
+        if fetch_reference:
             update_reference_properties(result)
         return result, search_result['hits']['total']
 
-    def first(self, is_fetch_reference=True):
+    def first(self, fetch_reference=True):
         """
         Fetch the first document.
         :return: {asahi.document.Document or None}
         """
-        documents, total = self.fetch(1, 0, is_fetch_reference=is_fetch_reference)
+        documents, total = self.fetch(1, 0, fetch_reference=fetch_reference)
         if total == 0:
             return None
         else:
