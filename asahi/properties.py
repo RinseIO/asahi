@@ -4,6 +4,12 @@ from .exceptions import BadValueError
 
 class Property(object):
     def __init__(self, default=None, is_required=False):
+        """
+        Init the Property.
+        :param default: The default value.
+        :param is_required: {bool} Is this failed required?
+        :return:
+        """
         self.document_class = None
         self.name = None
         self.default = default
