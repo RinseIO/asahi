@@ -133,3 +133,32 @@ class ListProperty(Property):
 class DictProperty(Property):
     _to_python = dict
     _to_json = dict
+
+class ReferenceProperty(Property):
+    def __init__(self, reference_class, *args, **kwargs):
+        from .document import Document
+
+        super(ReferenceProperty, self).__init__(*args, **kwargs)
+        if not issubclass(reference_class, Document):
+            raise TypeError('Reference class should be Document')
+        self.reference_class = reference_class
+        self.reference_instance = None
+        self.is_set_reference_instance = False
+
+    def _to_python(self, value):
+        if self.is_set_reference_instance:
+            # return reference instance
+            return self.reference_instance
+        # return reference id
+        return value
+    def _to_json(self, value):
+        if value is None:
+            return None
+        if isinstance(value, basestring):
+            # set reference id
+            return value
+        if not isinstance(value, self.reference_class):
+            raise ValueError('Value should be %s' % self.document_class)
+        self.reference_instance = value
+        self.is_set_reference_instance = True
+        return self.reference_instance._id
