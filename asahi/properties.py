@@ -1,5 +1,4 @@
 from datetime import datetime
-from couchdbkit import schema
 from .exceptions import BadValueError
 
 
@@ -131,7 +130,6 @@ class ListProperty(Property):
             return [DateTimeProperty._to_json(x) for x in value]
         return [self.item_type(x) for x in value]
 
-# Property = schema.Property
-DictProperty = schema.DictProperty
-SchemaDictProperty = schema.SchemaDictProperty
-SetProperty = schema.SetProperty
+class DictProperty(Property):
+    _to_python = dict
+    _to_json = dict
