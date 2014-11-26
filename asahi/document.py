@@ -64,8 +64,8 @@ class Document(object):
             )
             result_table = {x['_id']: x for x in response['docs'] if x['found']}
             result = []
-            for id in ids:
-                document = result_table.get(id)
+            for document_id in ids:
+                document = result_table.get(document_id)
                 if document:
                     result.append(cls(_id=document['_id'], _version=document['_version'], **document['_source']))
             return result
