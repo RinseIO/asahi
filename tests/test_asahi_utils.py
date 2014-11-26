@@ -12,7 +12,7 @@ class TestAsahiUtils(unittest.TestCase):
     def test_asahi_utils_get_elasticsearch(self):
         from elasticsearch import Elasticsearch
         es = utils.get_elasticsearch()
-        Elasticsearch.assert_called_with('localhost', port=9200)
+        Elasticsearch.assert_called_with('http://localhost:9200')
         self.assertEqual(es, 'es')
 
     @patcher(

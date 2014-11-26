@@ -93,7 +93,7 @@ class TestAsahiDocument(unittest.TestCase):
             id=None,
             body={'doc_type': 'Document'},
         )
-        fake_es().indices.flush.assert_any_call()
+        fake_es().indices.flush.assert_called_with(index='db_name')
         map(lambda x: x.stop(), self.patches)
 
     def test_asahi_document_delete(self):
@@ -111,5 +111,5 @@ class TestAsahiDocument(unittest.TestCase):
             doc_type='Document',
             id='4689f7addaedc3d52a9688722c3e595b',
         )
-        fake_es().indices.flush.assert_any_call()
+        fake_es().indices.flush.assert_called_with(index='db_name')
         map(lambda x: x.stop(), self.patches)
