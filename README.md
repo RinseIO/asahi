@@ -7,14 +7,13 @@ A database library for CouchDB and ElasticSearch.
 ##Installation
 >```bash
 $ git submodule add git@github.com:RinseIO/asahi.git
-$ git submodule add https://github.com/RinseIO/couchdbkit.git
-$ pip install elasticsearch
+$ git submodule add https://github.com/RinseIO/elasticsearch-py.git
 ```
 
 
 
 ##Document
->The [asahi document](https://github.com/RinseIO/asahi/blob/master/asahi/document.py#L11) is base on couchdbkit.ext.django.schema.DocumentBase.
+>
 ```python
 from asahi import db
 class SampleModel(db.Document):
@@ -246,37 +245,8 @@ $ python test.py
 
 
 ##django manage.py
-###sync CouchDB's views
->```bash
-$ python manage.py syncdb
-```
-
-###re-index ElasticSearch
->```bash
-delete ElasticSearch all indices than add from CouchDB
-$ python manage.py reindex
-```
-```python
-# create a file `reindex.py` at your app
-# {your_app}/management/commands/reindex.py
-from django.core.management.base import BaseCommand
-from django.conf import settings
-from asahi.django_ext import Handler
-class Command(BaseCommand):
-    def handle(self, *args, **options):
-        handler = Handler(
-            getattr(settings, "COUCHDB_DATABASES", []),
-            getattr(settings, "COUCHDB_USER", None),
-            getattr(settings, "COUCHDB_PASSWORD", None),
-        )
-        handler.re_index()
-```
-
-
-
 ##Note
->Asahi supports CouchDB's last version 1.5.1.  
-But there are issues about ElasticSearch.  
+>There are issues about ElasticSearch.  
 If your OS X is 10.9.3, your default Java is 1.6. ElasticSearch 1.2.0 required Java 1.7.
 Run ElasticSearch 1.2.0 on Java 1.6 will pop the message like this:
 ```
