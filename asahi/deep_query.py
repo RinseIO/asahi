@@ -10,32 +10,32 @@ def update_reference_properties(documents):
     """
     if not len(documents):
         return
-    data_table = {} # {document_class: {document_id: {Document}}}
-    reference_properties = [] # all reference properties in this Document
+    data_table = {}  # {document_class: {document_id: {Document}}}
+    reference_properties = []  # all reference properties in this Document
 
     # scan what kind of documents should be fetched
     for property_name, property in documents[0]._properties.items():
         if not isinstance(property, ReferenceProperty):
             continue
-        if not data_table.has_key(property.reference_class):
+        if property.reference_class not in data_table:
             data_table[property.reference_class] = {}
         reference_properties.append(property)
 
     # scan what id of documents should be fetched
     for document in documents:
-        for property in reference_properties: # loop all reference properties in the document
+        for property in reference_properties:  # loop all reference properties in the document
             data_table[property.reference_class][getattr(document, property.name)] = None
 
     # fetch documents
     for document_class, items in data_table.items():
-        for reference_document in document_class.get(items.keys(), is_fetch_reference=False):
+        for reference_document in document_class.get(list(items.keys()), is_fetch_reference=False):
             data_table[document_class][reference_document._id] = reference_document
 
     # update reference properties of documents
     for document in documents:
-        for property in reference_properties: # loop all reference properties in the document
+        for property in reference_properties:  # loop all reference properties in the document
             reference_document = data_table[property.reference_class].get(getattr(document, property.name))
             if property.is_required and reference_document is None:
-                logging.warn("There are a reference class can't mapping")
+                logging.warning("There are a reference class can't mapping")
                 continue
             setattr(document, property.name, reference_document)

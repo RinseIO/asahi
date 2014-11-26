@@ -1,7 +1,7 @@
 from datetime import datetime
-from query import Query
-import utils
-from .properties import Property, StringProperty, LongProperty, DateTimeProperty
+from . import utils
+from .query import Query
+from .properties import Property, StringProperty, IntegerProperty, DateTimeProperty
 from .exceptions import NotFoundError
 from .deep_query import update_reference_properties
 
@@ -16,7 +16,7 @@ class Document(object):
     :attribute _index_name: {string}
     """
     _id = StringProperty()
-    _version = LongProperty()
+    _version = IntegerProperty()
 
     def __new__(cls, *args, **kwargs):
         cls._properties = {}
@@ -33,9 +33,8 @@ class Document(object):
         super(Document, self).__init__()
         self._document = {}
         self._reference_document = {}
-        argument_keys = kwargs.keys()
         for property_name, property in self._properties.items():
-            if property_name in argument_keys:
+            if property_name in kwargs.keys():
                 setattr(self, property_name, kwargs[property_name])
             else:
                 setattr(self, property_name, property.default)
@@ -124,8 +123,8 @@ class Document(object):
         Save the document.
         """
         es = utils.get_elasticsearch()
-        if self._version is None:
-            self._version = 0L
+        # if self._version is None:
+        #     self._version = 0
         for property_name, property in self._properties.items():
             if isinstance(property, DateTimeProperty) and property.is_auto_now and not getattr(self, property_name):
                 setattr(self, property_name, datetime.utcnow())

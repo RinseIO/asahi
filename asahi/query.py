@@ -1,4 +1,4 @@
-import utils
+from . import utils
 from .deep_query import update_reference_properties
 
 
@@ -65,7 +65,7 @@ class Query(object):
         ]
         :return: {asahi.query.Query}
         """
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], str):
             # .and('member', equal='')
             member = args[0]
             operation_code, value = self.__parse_operation(**kwargs)
@@ -102,7 +102,7 @@ class Query(object):
         ]
         :return: {asahi.query.Query}
         """
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], str):
             # .or('member', equal='')
             member = args[0]
             operation_code, value = self.__parse_operation(**kwargs)

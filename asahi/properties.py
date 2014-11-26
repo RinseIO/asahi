@@ -43,26 +43,22 @@ class Property(object):
         :param value:
         :return:
         """
-        return unicode(value)
+        return str(value)
     def _to_json(self, value):
         """
         Convert the value to ElasticSearch format.
         :param value:
         :return:
         """
-        return unicode(value)
+        return str(value)
 
 class StringProperty(Property):
-    _to_python = unicode
-    _to_json = unicode
+    _to_python = str
+    _to_json = str
 
 class IntegerProperty(Property):
     _to_python = int
     _to_json = int
-
-class LongProperty(Property):
-    _to_python = long
-    _to_json = long
 
 class FloatProperty(Property):
     _to_python = float
@@ -84,12 +80,12 @@ class DateTimeProperty(Property):
         :param value: {datetime}, {string}
         :return: {datetime}
         """
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             try:
                 value = value.split('.', 1)[0] # strip out microseconds
                 value = value[0:19] # remove timezone
                 value = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
-            except ValueError, e:
+            except ValueError as e:
                 raise ValueError('Invalid ISO date/time %r [%s]' % (value, str(e)))
         return value
     @classmethod
@@ -99,7 +95,7 @@ class DateTimeProperty(Property):
         :param value: {datetime}, {string}
         :return: {string}
         """
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             return value
         return value.replace(microsecond=0).isoformat() + 'Z'
 
@@ -113,11 +109,9 @@ class ListProperty(Property):
         :return:
         """
         super(ListProperty, self).__init__(*args, **kwargs)
-        if item_type is str or item_type is basestring:
-            item_type = unicode
         if not isinstance(item_type, type):
             raise TypeError('Item type should be a type object')
-        if item_type not in [unicode, int, long, float, bool, datetime]:
+        if item_type not in [str, int, float, bool, datetime]:
             raise ValueError('Item type %s is not acceptable' % item_type.__name__)
         self.item_type = item_type
 
@@ -157,7 +151,7 @@ class ReferenceProperty(Property):
             document_instance._document[self.name] = None
             document_instance._reference_document[self.name] = None
 
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             # set reference id
             document_instance._document[self.name] = value
         else:
