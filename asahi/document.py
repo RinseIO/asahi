@@ -3,6 +3,7 @@ from query import Query
 import utils
 from .properties import Property, StringProperty, LongProperty, DateTimeProperty
 from .exceptions import NotFoundError
+from .deep_query import update_reference_properties
 
 
 class Document(object):
@@ -10,6 +11,7 @@ class Document(object):
     :attribute _id: {string}
     :attribute _version: {long}
     :attribute _document: {dict} {'property_name': (value)}
+    :attribute _reference_document: {dict} {'property_name': {Document}}
     :attribute _properties: {dict} {'property_name': {Property}}
     :attribute _index_name: {string}
     """
@@ -30,6 +32,7 @@ class Document(object):
     def __init__(self, **kwargs):
         super(Document, self).__init__()
         self._document = {}
+        self._reference_document = {}
         argument_keys = kwargs.keys()
         for property_name, property in self._properties.items():
             if property_name in argument_keys:
@@ -44,7 +47,7 @@ class Document(object):
         return cls._index_name
 
     @classmethod
-    def get(cls, ids):
+    def get(cls, ids, is_fetch_reference=True):
         """
         Get documents by ids.
         :param ids: {list or string} The documents' id.
@@ -68,16 +71,21 @@ class Document(object):
                 document = result_table.get(document_id)
                 if document:
                     result.append(cls(_id=document['_id'], _version=document['_version'], **document['_source']))
+            if is_fetch_reference:
+                update_reference_properties(result)
             return result
 
         # fetch the document
         try:
-            result = es.get(
+            response = es.get(
                 index=cls.get_index_name(),
                 doc_type=cls.__name__,
                 id=ids,
             )
-            return cls(_id=result['_id'], _version=result['_version'], **result['_source'])
+            result = cls(_id=response['_id'], _version=response['_version'], **response['_source'])
+            if is_fetch_reference:
+                update_reference_properties([result])
+            return result
         except NotFoundError:
             return None
 

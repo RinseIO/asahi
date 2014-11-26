@@ -142,23 +142,26 @@ class ReferenceProperty(Property):
         if not issubclass(reference_class, Document):
             raise TypeError('Reference class should be Document')
         self.reference_class = reference_class
-        self.reference_instance = None
-        self.is_set_reference_instance = False
 
-    def _to_python(self, value):
-        if self.is_set_reference_instance:
-            # return reference instance
-            return self.reference_instance
-        # return reference id
+    def __get__(self, document_instance, document_class):
+        if document_instance is None:
+            return self
+
+        value = document_instance._reference_document.get(self.name) or document_instance._document.get(self.name)
         return value
-    def _to_json(self, value):
+
+    def __set__(self, document_instance, value):
         if value is None:
-            return None
+            if self.is_required:
+                raise BadValueError('%s is required' % self.name)
+            document_instance._document[self.name] = None
+            document_instance._reference_document[self.name] = None
+
         if isinstance(value, basestring):
             # set reference id
-            return value
-        if not isinstance(value, self.reference_class):
-            raise ValueError('Value should be %s' % self.document_class)
-        self.reference_instance = value
-        self.is_set_reference_instance = True
-        return self.reference_instance._id
+            document_instance._document[self.name] = value
+        else:
+            if not isinstance(value, self.reference_class):
+                raise ValueError('Value should be %s' % self.document_class)
+            document_instance._document[self.name] = value._id
+            document_instance._reference_document[self.name] = value
