@@ -1,10 +1,10 @@
 # couchdbkit
-ujson>=1.33
-restkit>=4.2.2
+ujson==1.33
+restkit==4.2.2
 
 # elasticsearch-py
-urllib3>=1.8
+urllib3==1.8
 
 # unit-test
-mock>=1.0.1
-django>=1.5
+mock==1.0.1
+django==1.5.11
