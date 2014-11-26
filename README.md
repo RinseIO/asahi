@@ -239,7 +239,7 @@ $ pip3 install -r pip_requirements.txt
 
 ##unit-test
 >```bash
-$ python test.py
+$ python3 test.py
 ```
 
 
