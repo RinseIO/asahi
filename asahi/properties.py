@@ -78,7 +78,8 @@ class DateTimeProperty(Property):
         super(DateTimeProperty, self).__init__(*args, **kwargs)
         self.is_auto_now = is_auto_now
 
-    def _to_python(self, value):
+    @classmethod
+    def _to_python(cls, value):
         """
         Convert value to python format.
         :param value: {datetime}, {string}
@@ -92,7 +93,8 @@ class DateTimeProperty(Property):
             except ValueError, e:
                 raise ValueError('Invalid ISO date/time %r [%s]' % (value, str(e)))
         return value
-    def _to_json(self, value):
+    @classmethod
+    def _to_json(cls, value):
         """
         Convert value to json format.
         :param value: {datetime}, {string}
@@ -104,23 +106,32 @@ class DateTimeProperty(Property):
 
 class ListProperty(Property):
     def __init__(self, item_type, *args, **kwargs):
+        """
+        Init list property.
+        :param item_type: {type} The item type of the list. allow: [str, int, long, float, bool, datetime]
+        :param args:
+        :param kwargs:
+        :return:
+        """
         super(ListProperty, self).__init__(*args, **kwargs)
         if item_type is str or item_type is basestring:
             item_type = unicode
         if not isinstance(item_type, type):
             raise TypeError('Item type should be a type object')
-        if item_type not in [unicode, int, long]:
+        if item_type not in [unicode, int, long, float, bool, datetime]:
             raise ValueError('Item type %s is not acceptable' % item_type.__name__)
         self.item_type = item_type
 
     def _to_python(self, value):
+        if self.item_type is datetime:
+            return [DateTimeProperty._to_python(x) for x in value]
         return [self.item_type(x) for x in value]
     def _to_json(self, value):
+        if self.item_type is datetime:
+            return [DateTimeProperty._to_json(x) for x in value]
         return [self.item_type(x) for x in value]
 
 # Property = schema.Property
 DictProperty = schema.DictProperty
-StringDictProperty = schema.StringDictProperty
-StringListProperty = schema.StringListProperty
 SchemaDictProperty = schema.SchemaDictProperty
 SetProperty = schema.SetProperty
