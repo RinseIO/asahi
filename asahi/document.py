@@ -123,8 +123,8 @@ class Document(object):
         Save the document.
         """
         es = utils.get_elasticsearch()
-        # if self._version is None:
-        #     self._version = 0
+        if self._version is None:
+            self._version = 0
         for property_name, property in self._properties.items():
             if isinstance(property, DateTimeProperty) and property.is_auto_now and not getattr(self, property_name):
                 setattr(self, property_name, datetime.utcnow())
@@ -142,6 +142,7 @@ class Document(object):
         self._version = result.get('_version')
         if is_synchronized:
             es.indices.flush(index=self.get_index_name())
+        return self
 
     def delete(self, is_synchronized=False):
         """
@@ -158,3 +159,4 @@ class Document(object):
         )
         if is_synchronized:
             es.indices.flush(index=self.get_index_name())
+        return self
