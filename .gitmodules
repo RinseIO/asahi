@@ -1,0 +1,3 @@
+[submodule "submodules/elasticsearch-py"]
+	path = submodules/elasticsearch-py
+	url = https://github.com/RinseIO/elasticsearch-py.git
