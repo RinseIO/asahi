@@ -66,10 +66,10 @@ class TestAsahiQuery(unittest.TestCase):
                 'total': 0
             }
         }
-        with patch('asahi.document.utils.get_elasticsearch', new=fake_es):
+        with patch('asahi.document.Document._es', new=fake_es):
             self.query.document_class.get_index_name = MagicMock(return_value='index_name')
             self.query.fetch()
-        fake_es().search.assert_called_once_with(
+        fake_es.search.assert_called_once_with(
             index='index_name',
             body={'sort': [], 'fields': ['_source'], 'from': 0, 'size': 1000},
             version=True,

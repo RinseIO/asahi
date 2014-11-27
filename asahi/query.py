@@ -1,4 +1,3 @@
-from . import utils
 from .deep_query import update_reference_properties
 
 
@@ -151,7 +150,7 @@ class Query(object):
             The documents.
             The total items.
         """
-        es = utils.get_elasticsearch()
+        es = self.document_class._es
         search_result = es.search(
             index=self.document_class.get_index_name(),
             body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
@@ -181,7 +180,7 @@ class Query(object):
         :return: {int}
         """
         query, sort = self.__compile_queries(self.items)
-        es = utils.get_elasticsearch()
+        es = self.document_class._es
         if query is None:
             count_result = es.count(self.document_class.get_index_name())
         else:

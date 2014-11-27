@@ -13,10 +13,12 @@ class Document(object):
     :attribute _document: {dict} {'property_name': (value)}
     :attribute _reference_document: {dict} {'property_name': {Document}}
     :attribute _properties: {dict} {'property_name': {Property}}
+    :attribute _es: {Elasticsearch}
     :attribute _index_name: {string}
     """
     _id = StringProperty()
     _version = IntegerProperty()
+    _es = utils.get_elasticsearch()
 
     def __new__(cls, *args, **kwargs):
         cls._properties = {}
@@ -125,14 +127,12 @@ class Document(object):
         since the last refresh available for search.
         `<http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/indices-refresh.html>`_
         """
-        es = utils.get_elasticsearch()
-        es.indices.refresh(index=cls.get_index_name())
+        cls._es.indices.refresh(index=cls.get_index_name())
 
     def save(self, synchronized=False):
         """
         Save the document.
         """
-        es = utils.get_elasticsearch()
         if self._version is None:
             self._version = 0
         for property_name, property in self._properties.items():
@@ -141,7 +141,7 @@ class Document(object):
         document = self._document.copy()
         del document['_id']
         del document['_version']
-        result = es.index(
+        result = self._es.index(
             index=self.get_index_name(),
             doc_type=self.__class__.__name__,
             id=self._id,
@@ -151,7 +151,7 @@ class Document(object):
         self._id = result.get('_id')
         self._version = result.get('_version')
         if synchronized:
-            es.indices.refresh(index=self.get_index_name())
+            self._es.indices.refresh(index=self.get_index_name())
         return self
 
     def delete(self, synchronized=False):
@@ -161,12 +161,11 @@ class Document(object):
         if not self._id:
             return None
 
-        es = utils.get_elasticsearch()
-        es.delete(
+        self._es.delete(
             index=self.get_index_name(),
             doc_type=self.__class__.__name__,
             id=self._id,
         )
         if synchronized:
-            es.indices.refresh(index=self.get_index_name())
+            self._es.indices.refresh(index=self.get_index_name())
         return self
