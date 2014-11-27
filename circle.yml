@@ -11,6 +11,7 @@ machine:
 
 dependencies:
     pre:
+        - git submodule deinit submodules/elasticsearch-py
         - git submodule update --init
         - pip3 install -r pip_requirements.txt
 
