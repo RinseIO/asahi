@@ -118,6 +118,16 @@ class Document(object):
         """
         return Query(cls)
 
+    @classmethod
+    def refresh(cls):
+        """
+        Explicitly refresh the index, making all operations performed
+        since the last refresh available for search.
+        `<http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/indices-refresh.html>`_
+        """
+        es = utils.get_elasticsearch()
+        es.indices.refresh(index=cls.get_index_name())
+
     def save(self, synchronized=False):
         """
         Save the document.
