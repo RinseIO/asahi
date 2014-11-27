@@ -1,6 +1,6 @@
 #asahi ![circle-ci](https://circleci.com/gh/RinseIO/asahi.png?circle-token=31b839a690302dd8cbf4c7eee52f63b82ea53cd4)
 
-A database library for CouchDB and ElasticSearch.
+A database library for ElasticSearch.
 
 
 
@@ -71,13 +71,19 @@ def all(cls):
     """
 ```
 ```python
-def save(self, **params):
+def refresh(self):
+    """
+    Explicitly refresh the index, making all operations performed
+    """
+```
+```python
+def save(self, synchronized=False):
     """
     Save the document.
     """
 ```
 ```python
-def delete(self):
+def delete(self, synchronized=False):
     """
     Delete the document.
     """
@@ -212,21 +218,12 @@ count = ExampleModel.where('age', less=10).count()
 + Property
 + StringProperty
 + IntegerProperty
-+ DecimalProperty
 + BooleanProperty
 + FloatProperty
 + DateTimeProperty
-+ DateProperty
-+ TimeProperty
-+ SchemaProperty
-+ SchemaListProperty
 + ListProperty
 + DictProperty
-+ StringDictProperty
-+ StringListProperty
-+ SchemaDictProperty
-+ SetProperty
-
++ ReferenceProperty
 
 
 ##Requirement
