@@ -26,7 +26,7 @@ class SampleModel(db.Document):
     created_at = db.DateTimeProperty(auto_now=True)
 ```
 
-**Attributes**
+**Properties**
 >```python
 _id: {string}
 _version: {long}
