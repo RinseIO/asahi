@@ -15,13 +15,21 @@ $ git submodule add https://github.com/RinseIO/elasticsearch-py.git
 ##Document
 >
 ```python
+# example:
 from asahi import db
+# define your data model
 class SampleModel(db.Document):
     name = db.StringProperty()
     email = db.StringProperty(required=True)
     is_vip = db.BooleanProperty(default=False)
     quota = db.FloatProperty(default=0.0)
-    created_at = db.DateTimeProperty(auto_now_add=True)
+    created_at = db.DateTimeProperty(auto_now=True)
+```
+
+**Attributes**
+>```python
+_id: {string}
+_version: {long}
 ```
 
 **Methods**
@@ -35,12 +43,12 @@ def get(cls, ids, rev=None, db=None, dynamic_properties=True):
 # example:
 #    Get the document by the id.
 #    The result document is SampleModel's instance.
-document = SampleModel.get('8ee4891d79182647b80c53e0a21f4a6d')
+    document = SampleModel.get('byMQ-ULRSJ291RG_eEwSfQ')
 #    Get the documents by ids.
 #    The result documents is the list. There are SampleModels' instance in the list.
-documents = SampleModel.get([
-        '8ee4891d79182647b80c53e0a21f4a6d',
-        '7ccecde23f7bf67b2b6586f9917c259c',
+    documents = SampleModel.get([
+        'byMQ-ULRSJ291RG_eEwSfQ',
+        'byMQ-ULRSJ291RG_eEwSfc',
     ])
 ```
 ```python
