@@ -29,7 +29,7 @@ class SampleModel(db.Document):
 **Properties**
 >```python
 _id: {string}
-_version: {long}
+_version: {int}
 ```
 
 **Methods**

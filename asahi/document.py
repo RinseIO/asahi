@@ -9,7 +9,7 @@ from .deep_query import update_reference_properties
 class Document(object):
     """
     :attribute _id: {string}
-    :attribute _version: {long}
+    :attribute _version: {int}
     :attribute _document: {dict} {'property_name': (value)}
     :attribute _reference_document: {dict} {'property_name': {Document}}
     :attribute _properties: {dict} {'property_name': {Property}}
