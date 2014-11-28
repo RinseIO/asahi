@@ -71,7 +71,7 @@ def all(cls):
     """
 ```
 ```python
-def refresh(self):
+def refresh(cls):
     """
     Explicitly refresh the index, making all operations performed
     """
