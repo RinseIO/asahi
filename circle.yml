@@ -3,12 +3,6 @@ machine:
         version:
             3.4.1
 
-    hosts:
-        circlehost: 127.0.0.1
-
-    environment:
-        CIRCLE_ENV: test
-
 dependencies:
     pre:
         - git submodule update --init
