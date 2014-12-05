@@ -8,6 +8,7 @@ from .deep_query import update_reference_properties
 
 class Document(object):
     """
+    :attribute _index: {string} You can set index of this Document.
     :attribute _id: {string}
     :attribute _version: {int}
     :attribute _document: {dict} {'property_name': (value)}
@@ -44,7 +45,10 @@ class Document(object):
     @classmethod
     def get_index_name(cls):
         if not hasattr(cls, '_index_name') or not cls._index_name:
-            cls._index_name = '%s%s' % (utils.get_index_prefix(), cls.__name__.lower())
+            if hasattr(cls, '_index') and cls._index:
+                cls._index_name = '%s%s' % (utils.get_index_prefix(), cls._index)
+            else:
+                cls._index_name = '%s%s' % (utils.get_index_prefix(), cls.__name__.lower())
         return cls._index_name
 
     @classmethod
