@@ -49,18 +49,18 @@ class Property(object):
         :param value:
         :return:
         """
-        return str(value)
+        return unicode(value)
     def _to_json(self, value):
         """
         Convert the value to ElasticSearch format.
         :param value:
         :return:
         """
-        return str(value)
+        return unicode(value)
 
 class StringProperty(Property):
-    _to_python = str
-    _to_json = str
+    _to_python = unicode
+    _to_json = unicode
 
 class IntegerProperty(Property):
     _to_python = int
@@ -86,7 +86,7 @@ class DateTimeProperty(Property):
         :param value: {datetime}, {string}
         :return: {datetime}
         """
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             try:
                 value = value.split('.', 1)[0] # strip out microseconds
                 value = value[0:19] # remove timezone
@@ -101,7 +101,7 @@ class DateTimeProperty(Property):
         :param value: {datetime}, {string}
         :return: {string}
         """
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             return value
         return value.replace(microsecond=0).isoformat() + 'Z'
 
@@ -117,7 +117,9 @@ class ListProperty(Property):
         super(ListProperty, self).__init__(*args, **kwargs)
         if not isinstance(item_type, type):
             raise TypeError('Item type should be a type object')
-        if item_type not in [str, int, float, bool, datetime]:
+        if item_type in [basestring, str]:
+            item_type = unicode
+        if item_type not in [unicode, int, float, bool, datetime]:
             raise ValueError('Item type %s is not acceptable' % item_type.__name__)
         self.item_type = item_type
 
@@ -157,7 +159,7 @@ class ReferenceProperty(Property):
             document_instance._document[self.name] = None
             document_instance._reference_document[self.name] = None
 
-        if isinstance(value, str):
+        if isinstance(value, unicode):
             # set reference id
             document_instance._document[self.name] = value
         else:

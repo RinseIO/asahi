@@ -28,7 +28,7 @@ def update_reference_properties(documents):
 
     # fetch documents
     for document_class, items in data_table.items():
-        for reference_document in document_class.get(list(items.keys()), fetch_reference=False):
+        for reference_document in document_class.get(items.keys(), fetch_reference=False):
             data_table[document_class][reference_document._id] = reference_document
 
     # update reference properties of documents

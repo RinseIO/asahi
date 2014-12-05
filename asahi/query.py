@@ -65,7 +65,7 @@ class Query(object):
         ]
         :return: {asahi.query.Query}
         """
-        if isinstance(args[0], str):
+        if isinstance(args[0], basestring):
             # .and('member', equal='')
             member = args[0]
             operation_code, value = self.__parse_operation(**kwargs)
@@ -102,7 +102,7 @@ class Query(object):
         ]
         :return: {asahi.query.Query}
         """
-        if isinstance(args[0], str):
+        if isinstance(args[0], basestring):
             # .or('member', equal='')
             member = args[0]
             operation_code, value = self.__parse_operation(**kwargs)
@@ -161,7 +161,7 @@ class Query(object):
         try:
             search_result = __search()
         except NotFoundError as e:
-            if 'IndexMissingException' in str(e):  # try to create index
+            if 'IndexMissingException' in unicode(e):  # try to create index
                 es.indices.create(index=self.document_class.get_index_name())
                 search_result = __search()
             else:
@@ -197,7 +197,7 @@ class Query(object):
             try:
                 count_result = __count()
             except NotFoundError as e:
-                if 'IndexMissingException' in str(e):  # try to create index
+                if 'IndexMissingException' in unicode(e):  # try to create index
                     es.indices.create(index=self.document_class.get_index_name())
                     count_result = __count()
                 else:
@@ -213,7 +213,7 @@ class Query(object):
             try:
                 count_result = __count()
             except NotFoundError as e:
-                if 'IndexMissingException' in str(e):  # try to create index
+                if 'IndexMissingException' in unicode(e):  # try to create index
                     es.indices.create(index=self.document_class.get_index_name())
                     count_result = __count()
                 else:

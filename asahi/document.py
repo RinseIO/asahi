@@ -70,7 +70,7 @@ class Document(object):
             try:
                 response = __get()
             except NotFoundError as e:
-                if 'IndexMissingException' in str(e):  # try to create index
+                if 'IndexMissingException' in unicode(e):  # try to create index
                     es.indices.create(index=cls.get_index_name())
                     response = __get()
                 else:
@@ -96,7 +96,7 @@ class Document(object):
             try:
                 response = __get()
             except NotFoundError as e:
-                if 'IndexMissingException' in str(e):  # try to create index
+                if 'IndexMissingException' in unicode(e):  # try to create index
                     es.indices.create(index=cls.get_index_name())
                     response = __get()
                 else:
