@@ -3,14 +3,8 @@ machine:
         version:
             2.7.6
 
-    hosts:
-        circlehost: 127.0.0.1
-
-    environment:
-        CIRCLE_ENV: test
-
 dependencies:
-    pre:
+    override:
         - git submodule update --init
         - pip install -r pip_requirements.txt
 
