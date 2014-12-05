@@ -59,13 +59,22 @@ class Document(object):
         es = utils.get_elasticsearch()
         if isinstance(ids, list):
             # fetch documents
-            response = es.mget(
-                index=cls.get_index_name(),
-                doc_type=cls.__name__,
-                body={
-                    'ids': list(set(ids))
-                },
-            )
+            def __get():
+                return es.mget(
+                    index=cls.get_index_name(),
+                    doc_type=cls.__name__,
+                    body={
+                        'ids': list(set(ids))
+                    },
+                )
+            try:
+                response = __get()
+            except NotFoundError as e:
+                if 'IndexMissingException' in str(e):  # try to create index
+                    es.indices.create(index=cls.get_index_name())
+                    response = __get()
+                else:
+                    raise e
             result_table = {x['_id']: x for x in response['docs'] if x['found']}
             result = []
             for document_id in ids:
@@ -78,11 +87,20 @@ class Document(object):
 
         # fetch the document
         try:
-            response = es.get(
-                index=cls.get_index_name(),
-                doc_type=cls.__name__,
-                id=ids,
-            )
+            def __get():
+                return es.get(
+                    index=cls.get_index_name(),
+                    doc_type=cls.__name__,
+                    id=ids,
+                )
+            try:
+                response = __get()
+            except NotFoundError as e:
+                if 'IndexMissingException' in str(e):  # try to create index
+                    es.indices.create(index=cls.get_index_name())
+                    response = __get()
+                else:
+                    raise e
             result = cls(_id=response['_id'], _version=response['_version'], **response['_source'])
             if fetch_reference:
                 update_reference_properties([result])

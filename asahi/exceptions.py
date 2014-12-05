@@ -6,3 +6,4 @@ class BadValueError(Exception):
     """
 ConflictError = exceptions.ConflictError
 NotFoundError = exceptions.NotFoundError
+ConnectionError = exceptions.ConnectionError

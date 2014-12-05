@@ -1,4 +1,5 @@
 from .deep_query import update_reference_properties
+from .exceptions import NotFoundError
 
 
 class QueryOperation(object):
@@ -151,11 +152,20 @@ class Query(object):
             The total items.
         """
         es = self.document_class._es
-        search_result = es.search(
-            index=self.document_class.get_index_name(),
-            body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
-            version=True
-        )
+        def __search():
+            return es.search(
+                index=self.document_class.get_index_name(),
+                body=self.__generate_elasticsearch_search_body(self.items, limit, skip),
+                version=True
+            )
+        try:
+            search_result = __search()
+        except NotFoundError as e:
+            if 'IndexMissingException' in str(e):  # try to create index
+                es.indices.create(index=self.document_class.get_index_name())
+                search_result = __search()
+            else:
+                raise e
         result = []
         for hits in search_result['hits']['hits']:
             result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
@@ -182,14 +192,32 @@ class Query(object):
         query, sort = self.__compile_queries(self.items)
         es = self.document_class._es
         if query is None:
-            count_result = es.count(self.document_class.get_index_name())
+            def __count():
+                return es.count(self.document_class.get_index_name())
+            try:
+                count_result = __count()
+            except NotFoundError as e:
+                if 'IndexMissingException' in str(e):  # try to create index
+                    es.indices.create(index=self.document_class.get_index_name())
+                    count_result = __count()
+                else:
+                    raise e
         else:
-            count_result = es.count(
-                index=self.document_class.get_index_name(),
-                body={
-                    'query': query
-                },
-            )
+            def __count():
+                return es.count(
+                    index=self.document_class.get_index_name(),
+                    body={
+                        'query': query
+                    },
+                )
+            try:
+                count_result = __count()
+            except NotFoundError as e:
+                if 'IndexMissingException' in str(e):  # try to create index
+                    es.indices.create(index=self.document_class.get_index_name())
+                    count_result = __count()
+                else:
+                    raise e
         return count_result['count']
 
 
