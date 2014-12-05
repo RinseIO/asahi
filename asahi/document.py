@@ -59,6 +59,8 @@ class Document(object):
         es = utils.get_elasticsearch()
         if isinstance(ids, list):
             # fetch documents
+            if not len(ids):
+                return []
             def __get():
                 return es.mget(
                     index=cls.get_index_name(),
