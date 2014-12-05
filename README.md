@@ -249,7 +249,6 @@ $ python3 test.py
 
 
 
-##django manage.py
 ##Note
 >There are issues about ElasticSearch.  
 If your OS X is 10.9.3, your default Java is 1.6. ElasticSearch 1.2.0 required Java 1.7.
