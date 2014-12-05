@@ -237,14 +237,14 @@ count = ExampleModel.where('age', less=10).count()
 ##Requirement
 >```bash
 $ git submodule update --init
-$ pip3 install -r pip_requirements.txt
+$ pip install -r pip_requirements.txt
 ```
 
 
 
 ##unit-test
 >```bash
-$ python3 test.py
+$ python test.py
 ```
 
 
