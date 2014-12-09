@@ -64,7 +64,7 @@ class Document(object):
                     index=cls.get_index_name(),
                     doc_type=cls.__name__,
                     body={
-                        'ids': list(set(ids))
+                        'ids': list([x for x in set(ids) if not x is None])
                     },
                 )
             try:
