@@ -19,6 +19,7 @@ $ git submodule add https://github.com/RinseIO/elasticsearch-py.git
 from asahi import db
 # define your data model
 class SampleModel(db.Document):
+    _index = 'samples'  # You can set index name by this attribute.
     name = db.StringProperty()
     email = db.StringProperty(required=True)
     is_vip = db.BooleanProperty(default=False)
