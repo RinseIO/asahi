@@ -168,10 +168,6 @@ class Query(object):
                 raise e
         result = []
         for hits in search_result['hits']['hits']:
-            try:
-                del hits['_source']['_id']
-            except KeyError:
-                pass
             result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
         if fetch_reference:
             update_reference_properties(result)

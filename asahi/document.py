@@ -86,10 +86,6 @@ class Document(object):
             for document_id in ids:
                 document = result_table.get(document_id)
                 if document:
-                    try:
-                        del document['_source']['_id']
-                    except KeyError:
-                        pass
                     result.append(cls(_id=document['_id'], _version=document['_version'], **document['_source']))
             if fetch_reference:
                 update_reference_properties(result)
@@ -111,10 +107,6 @@ class Document(object):
                     response = __get()
                 else:
                     raise e
-            try:
-                del response['_source']['_id']
-            except KeyError:
-                pass
             result = cls(_id=response['_id'], _version=response['_version'], **response['_source'])
             if fetch_reference:
                 update_reference_properties([result])
