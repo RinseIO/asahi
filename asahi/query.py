@@ -68,8 +68,7 @@ class Query(object):
         if isinstance(args[0], str):
             # .and('member', equal='')
             member = args[0]
-            if member not in self.document_class._properties.keys():
-                print(self.document_class._properties)
+            if member not in self.document_class.get_properties().keys():
                 raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
             self.items.append(QueryCell(
@@ -108,7 +107,7 @@ class Query(object):
         if isinstance(args[0], str):
             # .or('member', equal='')
             member = args[0]
-            if member not in self.document_class._properties.keys():
+            if member not in self.document_class.get_properties().keys():
                 raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
             self.items.append(QueryCell(
@@ -133,7 +132,7 @@ class Query(object):
         :param descending: {bool} Is sorted by descending.
         :return: {asahi.query.Query}
         """
-        if member not in self.document_class._properties.keys():
+        if member not in self.document_class.get_properties().keys():
             raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
         if descending:
             operation_code = QueryOperation.order_desc
