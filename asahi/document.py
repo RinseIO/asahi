@@ -58,7 +58,8 @@ class Document(object):
         Some time the class didn't call initial function but need get properties list.
         :return: {dict} {'property_name': {Property}}
         """
-        if not cls is cls._properties_in or not hasattr(cls, '_properties') or not cls._properties:
+        if not hasattr(cls, '_properties_in') or not cls is cls._properties_in\
+                or not hasattr(cls, '_properties'):
             cls._properties = cls.__get_properties()
             cls._properties_in = cls
         return cls._properties
