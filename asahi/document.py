@@ -22,14 +22,8 @@ class Document(object):
     _es = utils.get_elasticsearch()
 
     def __new__(cls, *args, **kwargs):
-        cls._properties = {}
-        for attribute_name in dir(cls):
-            if attribute_name.startswith('__'):
-                continue
-            attribute = getattr(cls, attribute_name)
-            if isinstance(attribute, Property):
-                cls._properties[attribute_name] = attribute
-                attribute.__property_config__(cls, attribute_name)
+        cls._properties = cls.__get_properties()
+        cls._properties_in = cls  # memo cls._properties from which class
         return object.__new__(cls, *args)
 
     def __init__(self, **kwargs):
@@ -41,6 +35,33 @@ class Document(object):
                 setattr(self, property_name, kwargs[property_name])
             else:
                 setattr(self, property_name, property.default)
+
+    @classmethod
+    def __get_properties(cls):
+        """
+        Get properties of this class.
+        :return: {dict} {'property_name': {Property}}
+        """
+        properties = {}
+        for attribute_name in dir(cls):
+            if attribute_name.startswith('__'):
+                continue
+            attribute = getattr(cls, attribute_name)
+            if isinstance(attribute, Property):
+                properties[attribute_name] = attribute
+                attribute.__property_config__(cls, attribute_name)
+        return properties
+
+    @classmethod
+    def get_properties(cls):
+        """
+        Some time the class didn't call initial function but need get properties list.
+        :return: {dict} {'property_name': {Property}}
+        """
+        if not cls is cls._properties_in or not hasattr(cls, '_properties') or not cls._properties:
+            cls._properties = cls.__get_properties()
+            cls._properties_in = cls
+        return cls._properties
 
     @classmethod
     def get_index_name(cls):
@@ -65,6 +86,7 @@ class Document(object):
             # fetch documents
             if not len(ids):
                 return []
+
             def __get():
                 return es.mget(
                     index=cls.get_index_name(),
@@ -73,6 +95,7 @@ class Document(object):
                         'ids': list([x for x in set(ids) if not x is None])
                     },
                 )
+
             try:
                 response = __get()
             except NotFoundError as e:
@@ -99,6 +122,7 @@ class Document(object):
                     doc_type=cls.__name__,
                     id=ids,
                 )
+
             try:
                 response = __get()
             except NotFoundError as e:

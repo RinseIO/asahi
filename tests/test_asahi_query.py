@@ -2,6 +2,7 @@ import unittest
 from mock import MagicMock, patch
 from asahi.query import QueryOperation, QueryCell, Query
 from asahi.document import Document
+from asahi.properties import StringProperty, DateTimeProperty
 
 
 class TestAsahiQueryOperation(unittest.TestCase):
@@ -44,12 +45,16 @@ class TestAsahiQueryCell(unittest.TestCase):
         self.assertListEqual(query.sub_queries, [])
 
 
+class FakeDocument(Document):
+    name = StringProperty()
+    nickname = StringProperty()
+    time = DateTimeProperty()
 class TestAsahiQuery(unittest.TestCase):
     def setUp(self):
-        self.query = Query(Document)
+        self.query = Query(FakeDocument)
 
     def test_asahi_query(self):
-        self.assertIs(self.query.document_class, Document)
+        self.assertIs(self.query.document_class, FakeDocument)
         self.assertEqual(len(self.query.items), 1)
         self.assertEqual(self.query.items[0].operation, QueryOperation.all)
 

@@ -1,5 +1,5 @@
 from .deep_query import update_reference_properties
-from .exceptions import NotFoundError
+from .exceptions import NotFoundError, PropertyNotExist
 
 
 class QueryOperation(object):
@@ -68,6 +68,8 @@ class Query(object):
         if isinstance(args[0], basestring):
             # .and('member', equal='')
             member = args[0]
+            if member not in self.document_class.get_properties().keys():
+                raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
             self.items.append(QueryCell(
                 QueryOperation.intersection | operation_code,
@@ -105,6 +107,8 @@ class Query(object):
         if isinstance(args[0], basestring):
             # .or('member', equal='')
             member = args[0]
+            if member not in self.document_class.get_properties().keys():
+                raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
             self.items.append(QueryCell(
                 QueryOperation.union | operation_code,
@@ -128,6 +132,8 @@ class Query(object):
         :param descending: {bool} Is sorted by descending.
         :return: {asahi.query.Query}
         """
+        if member not in self.document_class.get_properties().keys():
+            raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
         if descending:
             operation_code = QueryOperation.order_desc
         else:
