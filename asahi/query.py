@@ -1,3 +1,4 @@
+from datetime import datetime
 from .deep_query import update_reference_properties
 from .exceptions import NotFoundError, PropertyNotExist
 
@@ -383,34 +384,50 @@ class Query(object):
                 }
             }
         elif operation & QueryOperation.greater_equal == QueryOperation.greater_equal:
+            if isinstance(query.value, datetime):
+                query_value = self.__convert_datetime_for_query(query.value)
+            else:
+                query_value = query.value
             return {
                 'range': {
                     query.member: {
-                        'gte': query.value
+                        'gte': query_value
                     }
                 }
             }
         elif operation & QueryOperation.greater == QueryOperation.greater:
+            if isinstance(query.value, datetime):
+                query_value = self.__convert_datetime_for_query(query.value)
+            else:
+                query_value = query.value
             return {
                 'range': {
                     query.member: {
-                        'gt': query.value
+                        'gt': query_value
                     }
                 }
             }
         elif operation & QueryOperation.less_equal == QueryOperation.less_equal:
+            if isinstance(query.value, datetime):
+                query_value = self.__convert_datetime_for_query(query.value)
+            else:
+                query_value = query.value
             return {
                 'range': {
                     query.member: {
-                        'lte': query.value
+                        'lte': query_value
                     }
                 }
             }
         elif operation & QueryOperation.less == QueryOperation.less:
+            if isinstance(query.value, datetime):
+                query_value = self.__convert_datetime_for_query(query.value)
+            else:
+                query_value = query.value
             return {
                 'range': {
                     query.member: {
-                        'lt': query.value
+                        'lt': query_value
                     }
                 }
             }
@@ -462,6 +479,14 @@ class Query(object):
                         }
                     }
                 }
+
+    def __convert_datetime_for_query(self, date_time):
+        """
+        Convert datetime data for query.
+        :param date_time: {datetime}
+        :return: {string}
+        """
+        return date_time.strftime('%Y-%m-%dT%H:%M:%S')
 
     def __parse_operation(self, **kwargs):
         """
