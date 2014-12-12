@@ -10,8 +10,9 @@ class QueryOperation(object):
     less_equal = 0x003
     greater = 0x004
     greater_equal = 0x005
-    like = 0x010 # only for string
-    among = 0x020 # it is mean `in`
+    like = 0x011  # only for string
+    unlike = 0x010  # only for string
+    among = 0x020  # it is mean `in`
 
     intersection = 0x040
     union = 0x080
@@ -100,6 +101,7 @@ class Query(object):
             greater,
             greater_equal,
             like,
+            unlike,
             among,
         ]
         :return: {asahi.query.Query}
@@ -345,6 +347,35 @@ class Query(object):
                     ]
                 }
             }
+        elif operation & QueryOperation.unlike == QueryOperation.unlike:
+            return {
+                'bool': {
+                    'minimum_should_match': 2,
+                    'should': [
+                        {
+                            'bool': {
+                                'must_not': {
+                                    'match': {
+                                        query.member: {
+                                            'query': query.value,
+                                            'operator': 'and',
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            'bool': {
+                                'must_not': {
+                                    'regexp': {
+                                        query.member: '.*%s.*' % query.value
+                                    }
+                                }
+                            }
+                        },
+                    ]
+                }
+            }
         elif operation & QueryOperation.among == QueryOperation.among:
             return {
                 'bool': {
@@ -454,6 +485,8 @@ class Query(object):
             return QueryOperation.greater_equal, kwargs['greater_equal']
         elif 'like' in keys:
             return QueryOperation.like, kwargs['like']
+        elif 'unlike' in keys:
+            return QueryOperation.unlike, kwargs['unlike']
         elif 'among' in keys:
             return QueryOperation.among, kwargs['among']
         return None, None

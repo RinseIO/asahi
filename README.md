@@ -119,6 +119,7 @@ def where(self, *args, **kwargs):
         greater,
         greater_equal,
         like,
+        unlike,
         among,
     ]
     :return: {asahi.query.Query}
