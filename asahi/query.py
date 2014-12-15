@@ -17,9 +17,16 @@ class QueryOperation(object):
 
     intersection = 0x040
     union = 0x080
-    all = 0x100
-    order_asc = 0x200
+
+    all = 0x0100
+
+    # asc: 0x200, desc 0x000
+    # order: 0x400
+    order_asc = 0x600
     order_desc = 0x400
+    # group: 0x800
+    group_asc = 0xa00
+    group_desc = 0x800
 
 
 class QueryCell(object):
@@ -132,7 +139,7 @@ class Query(object):
         """
         Append the order query.
         :param member: {string} The property name of the document.
-        :param descending: {bool} Is sorted by descending.
+        :param descending: {bool} Is sorted by descending?
         :return: {asahi.query.Query}
         """
         if member not in self.document_class.get_properties().keys():
@@ -141,6 +148,25 @@ class Query(object):
             operation_code = QueryOperation.order_desc
         else:
             operation_code = QueryOperation.order_asc
+        self.items.append(QueryCell(
+            operation_code,
+            member=member
+        ))
+        return self
+
+    def group_by(self, member, descending=True):
+        """
+        Append aggregations query.
+        :param member: {string} The property name of the document.
+        :param descending: {bool} Is sorted by descending?
+        :return: {asahi.query.Query}
+        """
+        if member not in self.document_class.get_properties().keys():
+            raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
+        if descending:
+            operation_code = QueryOperation.group_desc
+        else:
+            operation_code = QueryOperation.group_asc
         self.items.append(QueryCell(
             operation_code,
             member=member
@@ -156,9 +182,17 @@ class Query(object):
         Fetch documents by the query.
         :param limit: {int} The size of the pagination. (The limit of the result items.)
         :param skip: {int} The offset of the pagination. (Skip x items.)
-        :returns: {list}, {int}
-            The documents.
-            The total items.
+        :returns: {tuple}
+            Without group_by:
+                ({list}[{Document}], {int}total)
+                The documents.
+                The total items.
+            Group_by:
+                ({list}[{dict}], {int}took)
+                {
+                    doc_count: {int},
+                    key: 'term'
+                }
         """
         es = self.document_class._es
         def __search():
@@ -175,12 +209,18 @@ class Query(object):
                 search_result = __search()
             else:
                 raise e
-        result = []
-        for hits in search_result['hits']['hits']:
-            result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
-        if fetch_reference:
-            update_reference_properties(result)
-        return result, search_result['hits']['total']
+
+        if 'aggregations' in search_result:
+            # group by result
+            return search_result['aggregations']['group']['buckets'], search_result['took']
+        else:
+            # fetch documents
+            result = []
+            for hits in search_result['hits']['hits']:
+                result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
+            if fetch_reference:
+                update_reference_properties(result)
+            return result, search_result['hits']['total']
 
     def first(self, fetch_reference=True):
         """
@@ -198,7 +238,7 @@ class Query(object):
         Count documents by the query.
         :return: {int}
         """
-        query, sort = self.__compile_queries(self.items)
+        query, *_ = self.__compile_queries(self.items)
         es = self.document_class._es
         if query is None:
             def __count():
@@ -241,33 +281,44 @@ class Query(object):
         :param skip: {int} Skip x items.
         :return: {dict} The elastic search search body
         """
-        es_query, sort_items = self.__compile_queries(queries)
-        result = {
-            'from': skip,
-            'size': limit,
-            'fields': ['_source'],
-            'sort': sort_items,
-        }
+        es_query, sort_items, group_item = self.__compile_queries(queries, limit)
+        if group_item:
+            # Aggregations
+            # http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
+            result = {
+                'size': 0,
+                'aggs': group_item,
+            }
+        else:
+            result = {
+                'from': skip,
+                'size': limit,
+                'fields': ['_source'],
+                'sort': sort_items,
+            }
         if es_query is not None:
             result['query'] = es_query
         return result
 
-    def __compile_queries(self, queries):
+    def __compile_queries(self, queries, limit=10):
         """
         Compile asahi query cells to the elastic search query.
         :param queries: {list} The asahi query cells.
-        :returns: {dict or None}, {list}
+        :param limit: {int} The number of group returns.
+        :returns: {tuple} ({dict or None}, {list}, {dict or None})
             The elastic search query dict.
             The elastic search sort list.
+            The elastic search group dict.
         """
         sort_items = []
+        group_item = None
         necessary_items = []
         optional_items = []
         last_item_is_necessary = False
         for query in queries:
             if query.sub_queries:
                 # compile sub queries
-                sub_query, sub_sort_items = self.__compile_queries(query.sub_queries)
+                sub_query, sub_sort_items, _ = self.__compile_queries(query.sub_queries)
                 if sub_query and query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
                     necessary_items.append(sub_query)
@@ -289,6 +340,7 @@ class Query(object):
                         optional_items.append(query_item)
                         last_item_is_necessary = False
                 elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
+                    # order asc
                     sort_items.append({
                         query.member: {
                             'order': 'asc',
@@ -297,6 +349,7 @@ class Query(object):
                         }
                     })
                 elif query.operation & QueryOperation.order_desc == QueryOperation.order_desc:
+                    # order desc
                     sort_items.append({
                         query.member: {
                             'order': 'desc',
@@ -304,6 +357,33 @@ class Query(object):
                             'missing': '_last',
                         }
                     })
+                elif query.operation & QueryOperation.group_asc == QueryOperation.group_asc:
+                    # group asc
+                    group_item = {
+                        'group': {
+                            'terms': {
+                                'field': query.member,
+                                'size': limit,
+                                'order': {
+                                    '_count': 'asc',
+                                }
+                            }
+                        }
+                    }
+                elif query.operation & QueryOperation.group_desc == QueryOperation.group_desc:
+                    # group desc
+                    group_item = {
+                        'group': {
+                            'terms': {
+                                'field': query.member,
+                                'size': limit,
+                                'order': {
+                                    '_count': 'desc',
+                                }
+                            }
+                        }
+                    }
+
         if len(necessary_items):
             optional_items.append({
                 'bool': {
@@ -320,7 +400,7 @@ class Query(object):
             }
         else:
             query = None
-        return query, sort_items
+        return query, sort_items, group_item
     def __compile_query(self, query):
         """
         Parse the asahi query cell to elastic search query.

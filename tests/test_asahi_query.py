@@ -22,8 +22,10 @@ class TestAsahiQueryOperation(unittest.TestCase):
         self.assertEqual(QueryOperation.intersection, 0x040)
         self.assertEqual(QueryOperation.union, 0x080)
         self.assertEqual(QueryOperation.all, 0x100)
-        self.assertEqual(QueryOperation.order_asc, 0x200)
+        self.assertEqual(QueryOperation.order_asc, 0x600)
         self.assertEqual(QueryOperation.order_desc, 0x400)
+        self.assertEqual(QueryOperation.group_asc, 0xa00)
+        self.assertEqual(QueryOperation.group_desc, 0x800)
 
 
 class TestAsahiQueryCell(unittest.TestCase):
@@ -115,7 +117,7 @@ class TestAsahiQuery(unittest.TestCase):
 
     def test_asahi_query__compile_queries_order_by_asc(self):
         query = self.query.order_by('time')
-        es_query, sort_list = self.query._Query__compile_queries(query.items)
+        es_query, sort_list, _ = self.query._Query__compile_queries(query.items)
         self.assertListEqual(sort_list, [
             {
                 'time': {
@@ -127,7 +129,7 @@ class TestAsahiQuery(unittest.TestCase):
         ])
     def test_asahi_query__compile_queries_order_by_desc(self):
         query = self.query.order_by('time', descending=True)
-        es_query, sort_list = self.query._Query__compile_queries(query.items)
+        es_query, sort_list, _ = self.query._Query__compile_queries(query.items)
         self.assertListEqual(sort_list, [
             {
                 'time': {
@@ -139,7 +141,7 @@ class TestAsahiQuery(unittest.TestCase):
         ])
     def test_asahi_query__compile_queries_intersection(self):
         query = self.query.where('name', equal='kelp')
-        es_query, sort_list = self.query._Query__compile_queries(query.items)
+        es_query, sort_list, _ = self.query._Query__compile_queries(query.items)
         self.assertDictEqual(es_query, {
             'bool': {
                 'minimum_should_match': 1,
@@ -164,7 +166,7 @@ class TestAsahiQuery(unittest.TestCase):
                                  x.where('name', equal='kelp')\
                                  .union('nickname', equal='kelp')
         )
-        es_query, sort_list = self.query._Query__compile_queries(query.items)
+        es_query, sort_list, _ = self.query._Query__compile_queries(query.items)
         self.assertDictEqual(es_query, {
             'bool': {
                 'minimum_should_match': 1,
