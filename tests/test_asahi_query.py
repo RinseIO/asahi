@@ -3,6 +3,7 @@ from mock import MagicMock, patch
 from asahi.query import QueryOperation, QueryCell, Query
 from asahi.document import Document
 from asahi.properties import StringProperty, DateTimeProperty
+from asahi.exceptions import QuerySyntaxError
 
 
 class TestAsahiQueryOperation(unittest.TestCase):
@@ -222,6 +223,41 @@ class TestAsahiQuery(unittest.TestCase):
                 ]
             }
         })
+    def test_asahi_query__compile_query_unlike(self):
+        query_cell = QueryCell(
+            QueryOperation.unlike,
+            member='email',
+            value='kelp@rinse.io',
+        )
+        result = self.query._Query__compile_query(query_cell)
+        self.assertDictEqual(result, {
+            'bool': {
+                    'minimum_should_match': 2,
+                    'should': [
+                        {
+                            'bool': {
+                                'must_not': {
+                                    'match': {
+                                        query_cell.member: {
+                                            'query': query_cell.value,
+                                            'operator': 'and',
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            'bool': {
+                                'must_not': {
+                                    'regexp': {
+                                        query_cell.member: '.*%s.*' % query_cell.value
+                                    }
+                                }
+                            }
+                        },
+                    ]
+                }
+        })
     def test_asahi_query__compile_query_among(self):
         query_cell = QueryCell(
             QueryOperation.among,
@@ -365,7 +401,5 @@ class TestAsahiQuery(unittest.TestCase):
         operation, value = self.query._Query__parse_operation(among='among')
         self.assertEqual(operation, QueryOperation.among)
         self.assertEqual(value, 'among')
-    def test_asahi_query__parse_operation_none(self):
-        operation, value = self.query._Query__parse_operation(good='xx')
-        self.assertIsNone(operation)
-        self.assertIsNone(value)
+    def test_asahi_query__parse_operation_raise(self):
+        self.assertRaises(QuerySyntaxError, self.query._Query__parse_operation, good='xx')

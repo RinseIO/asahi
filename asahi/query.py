@@ -1,6 +1,6 @@
 from datetime import datetime
 from .deep_query import update_reference_properties
-from .exceptions import NotFoundError, PropertyNotExist
+from .exceptions import NotFoundError, PropertyNotExist, QuerySyntaxError
 
 
 class QueryOperation(object):
@@ -484,7 +484,7 @@ class Query(object):
         """
         Convert datetime data for query.
         :param date_time: {datetime}
-        :return: {string}
+        :return: {string} "yyyy-MM-ddTHH:mm:ss
         """
         return date_time.strftime('%Y-%m-%dT%H:%M:%S')
 
@@ -495,23 +495,21 @@ class Query(object):
             QueryOperation: The query operation code.
             object: The query operation value.
         """
-        keys = kwargs.keys()
-        if 'equal' in keys:
-            return QueryOperation.equal, kwargs['equal']
-        elif 'unequal' in keys:
-            return QueryOperation.unequal, kwargs['unequal']
-        elif 'less' in keys:
-            return QueryOperation.less, kwargs['less']
-        elif 'less_equal' in keys:
-            return QueryOperation.less_equal, kwargs['less_equal']
-        elif 'greater' in keys:
-            return QueryOperation.greater, kwargs['greater']
-        elif 'greater_equal' in keys:
-            return QueryOperation.greater_equal, kwargs['greater_equal']
-        elif 'like' in keys:
-            return QueryOperation.like, kwargs['like']
-        elif 'unlike' in keys:
-            return QueryOperation.unlike, kwargs['unlike']
-        elif 'among' in keys:
-            return QueryOperation.among, kwargs['among']
-        return None, None
+        if len(kwargs) != 1:
+            raise QuerySyntaxError
+        key = list(kwargs.keys())[0]
+        try:
+            operation = {
+                'equal': QueryOperation.equal,
+                'unequal': QueryOperation.unequal,
+                'less': QueryOperation.less,
+                'less_equal': QueryOperation.less_equal,
+                'greater': QueryOperation.greater,
+                'greater_equal': QueryOperation.greater_equal,
+                'like': QueryOperation.like,
+                'unlike': QueryOperation.unlike,
+                'among': QueryOperation.among,
+            }[key]
+        except KeyError:
+            raise QuerySyntaxError
+        return operation, kwargs[key]
