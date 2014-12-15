@@ -484,7 +484,7 @@ class Query(object):
         """
         Convert datetime data for query.
         :param date_time: {datetime}
-        :return: {string}
+        :return: {string} "yyyy-MM-ddTHH:mm:ss
         """
         return date_time.strftime('%Y-%m-%dT%H:%M:%S')
 

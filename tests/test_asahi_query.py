@@ -222,6 +222,41 @@ class TestAsahiQuery(unittest.TestCase):
                 ]
             }
         })
+    def test_asahi_query__compile_query_unlike(self):
+        query_cell = QueryCell(
+            QueryOperation.unlike,
+            member='email',
+            value='kelp@rinse.io',
+        )
+        result = self.query._Query__compile_query(query_cell)
+        self.assertDictEqual(result, {
+            'bool': {
+                    'minimum_should_match': 2,
+                    'should': [
+                        {
+                            'bool': {
+                                'must_not': {
+                                    'match': {
+                                        query_cell.member: {
+                                            'query': query_cell.value,
+                                            'operator': 'and',
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            'bool': {
+                                'must_not': {
+                                    'regexp': {
+                                        query_cell.member: '.*%s.*' % query_cell.value
+                                    }
+                                }
+                            }
+                        },
+                    ]
+                }
+        })
     def test_asahi_query__compile_query_among(self):
         query_cell = QueryCell(
             QueryOperation.among,
