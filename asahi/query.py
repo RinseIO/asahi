@@ -497,7 +497,7 @@ class Query(object):
         """
         if len(kwargs) != 1:
             raise QuerySyntaxError
-        key = list(kwargs.keys())[0]
+        key = kwargs.keys()[0]
         try:
             operation = {
                 'equal': QueryOperation.equal,
