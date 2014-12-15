@@ -24,9 +24,6 @@ class QueryOperation(object):
     # order: 0x400
     order_asc = 0x600
     order_desc = 0x400
-    # group: 0x800
-    group_asc = 0xa00
-    group_desc = 0x800
 
 
 class QueryCell(object):
@@ -154,25 +151,6 @@ class Query(object):
         ))
         return self
 
-    def group_by(self, member, descending=True):
-        """
-        Append aggregations query.
-        :param member: {string} The property name of the document.
-        :param descending: {bool} Is sorted by descending?
-        :return: {asahi.query.Query}
-        """
-        if member not in self.document_class.get_properties().keys():
-            raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
-        if descending:
-            operation_code = QueryOperation.group_desc
-        else:
-            operation_code = QueryOperation.group_asc
-        self.items.append(QueryCell(
-            operation_code,
-            member=member
-        ))
-        return self
-
 
     # -----------------------------------------------------
     # The methods for fetch documents by the query.
@@ -183,16 +161,9 @@ class Query(object):
         :param limit: {int} The size of the pagination. (The limit of the result items.)
         :param skip: {int} The offset of the pagination. (Skip x items.)
         :returns: {tuple}
-            Without group_by:
-                ({list}[{Document}], {int}total)
-                The documents.
-                The total items.
-            Group_by:
-                ({list}[{dict}], {int}took)
-                {
-                    doc_count: {int},
-                    key: 'term'
-                }
+            ({list}[{Document}], {int}total)
+            The documents.
+            The total items.
         """
         es = self.document_class._es
         def __search():
@@ -210,17 +181,12 @@ class Query(object):
             else:
                 raise e
 
-        if 'aggregations' in search_result:
-            # group by result
-            return search_result['aggregations']['group']['buckets'], search_result['took']
-        else:
-            # fetch documents
-            result = []
-            for hits in search_result['hits']['hits']:
-                result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
-            if fetch_reference:
-                update_reference_properties(result)
-            return result, search_result['hits']['total']
+        result = []
+        for hits in search_result['hits']['hits']:
+            result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
+        if fetch_reference:
+            update_reference_properties(result)
+        return result, search_result['hits']['total']
 
     def first(self, fetch_reference=True):
         """
@@ -238,7 +204,7 @@ class Query(object):
         Count documents by the query.
         :return: {int}
         """
-        query, *_ = self.__compile_queries(self.items)
+        query, _ = self.__compile_queries(self.items)
         es = self.document_class._es
         if query is None:
             def __count():
@@ -269,6 +235,57 @@ class Query(object):
                     raise e
         return count_result['count']
 
+    def group_by(self, member, limit=10, descending=True):
+        """
+        Aggregations
+        http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
+        :param member: {string} The property name of the document.
+        :param limit: {int} The number of returns.
+        :param descending: {bool} Is sorted by descending?
+        :returns: {list}
+            {list}[{dict}]
+            {
+                doc_count: {int},
+                key: 'term'
+            }
+        """
+        if member not in self.document_class.get_properties().keys():
+            raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
+        es = self.document_class._es
+        es_query, sort_items = self.__compile_queries(self.items)
+        query_body = {
+            'size': 0,
+            'aggs': {
+                'group': {
+                    'terms': {
+                        'field': member,
+                        'size': limit,
+                        'order': {
+                            '_count': 'desc' if descending else 'asc'
+                        }
+                    }
+                }
+            }
+        }
+        if es_query:
+            query_body['query'] = es_query
+
+        def __search():
+            return es.search(
+                index=self.document_class.get_index_name(),
+                body=query_body,
+            )
+        try:
+            search_result = __search()
+        except NotFoundError as e:
+            if 'IndexMissingException' in str(e):  # try to create index
+                es.indices.create(index=self.document_class.get_index_name())
+                search_result = __search()
+            else:
+                raise e
+
+        return search_result['aggregations']['group']['buckets']
+
 
     # -----------------------------------------------------
     # Private methods.
@@ -281,44 +298,33 @@ class Query(object):
         :param skip: {int} Skip x items.
         :return: {dict} The elastic search search body
         """
-        es_query, sort_items, group_item = self.__compile_queries(queries, limit)
-        if group_item:
-            # Aggregations
-            # http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
-            result = {
-                'size': 0,
-                'aggs': group_item,
-            }
-        else:
-            result = {
-                'from': skip,
-                'size': limit,
-                'fields': ['_source'],
-                'sort': sort_items,
-            }
-        if es_query is not None:
+        es_query, sort_items = self.__compile_queries(queries)
+        result = {
+            'from': skip,
+            'size': limit,
+            'fields': ['_source'],
+            'sort': sort_items,
+        }
+        if es_query:
             result['query'] = es_query
         return result
 
-    def __compile_queries(self, queries, limit=10):
+    def __compile_queries(self, queries):
         """
         Compile asahi query cells to the elastic search query.
         :param queries: {list} The asahi query cells.
-        :param limit: {int} The number of group returns.
-        :returns: {tuple} ({dict or None}, {list}, {dict or None})
+        :returns: {tuple} ({dict or None}, {list})
             The elastic search query dict.
             The elastic search sort list.
-            The elastic search group dict.
         """
         sort_items = []
-        group_item = None
         necessary_items = []
         optional_items = []
         last_item_is_necessary = False
         for query in queries:
             if query.sub_queries:
                 # compile sub queries
-                sub_query, sub_sort_items, _ = self.__compile_queries(query.sub_queries)
+                sub_query, sub_sort_items = self.__compile_queries(query.sub_queries)
                 if sub_query and query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
                     necessary_items.append(sub_query)
@@ -357,32 +363,6 @@ class Query(object):
                             'missing': '_last',
                         }
                     })
-                elif query.operation & QueryOperation.group_asc == QueryOperation.group_asc:
-                    # group asc
-                    group_item = {
-                        'group': {
-                            'terms': {
-                                'field': query.member,
-                                'size': limit,
-                                'order': {
-                                    '_count': 'asc',
-                                }
-                            }
-                        }
-                    }
-                elif query.operation & QueryOperation.group_desc == QueryOperation.group_desc:
-                    # group desc
-                    group_item = {
-                        'group': {
-                            'terms': {
-                                'field': query.member,
-                                'size': limit,
-                                'order': {
-                                    '_count': 'desc',
-                                }
-                            }
-                        }
-                    }
 
         if len(necessary_items):
             optional_items.append({
@@ -400,7 +380,7 @@ class Query(object):
             }
         else:
             query = None
-        return query, sort_items, group_item
+        return query, sort_items
     def __compile_query(self, query):
         """
         Parse the asahi query cell to elastic search query.
