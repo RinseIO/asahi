@@ -3,6 +3,7 @@ from mock import MagicMock, patch
 from asahi.query import QueryOperation, QueryCell, Query
 from asahi.document import Document
 from asahi.properties import StringProperty, DateTimeProperty
+from asahi.exceptions import QuerySyntaxError
 
 
 class TestAsahiQueryOperation(unittest.TestCase):
@@ -400,7 +401,5 @@ class TestAsahiQuery(unittest.TestCase):
         operation, value = self.query._Query__parse_operation(among='among')
         self.assertEqual(operation, QueryOperation.among)
         self.assertEqual(value, 'among')
-    def test_asahi_query__parse_operation_none(self):
-        operation, value = self.query._Query__parse_operation(good='xx')
-        self.assertIsNone(operation)
-        self.assertIsNone(value)
+    def test_asahi_query__parse_operation_raise(self):
+        self.assertRaises(QuerySyntaxError, self.query._Query__parse_operation, good='xx')
