@@ -162,16 +162,15 @@ def count(self):
     """
 ```
 ```python
-def group_by(self, member, limit=10, descending=True, id_field=False):
+def group_by(self, member, limit=10, descending=True, id_field=True):
     """
     Aggregations
     http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
     :param member: {string} The property name of the document.
     :param limit: {int} The number of returns.
     :param descending: {bool} Is sorted by descending?
-    :param id_field: {bool} There is '-' in id (elasticsearch < 1.4 [#7531](https://github.com/elasticsearch/elasticsearch/pull/7531).
-                                And ElasticSearch will .split() it.
-                                If this param is true, asahi will join that together.
+    :param id_field: {bool} There is '-' in id, and ElasticSearch will .split() it.
+                                    If this param is true, asahi will join that together.
     :returns: {list}
         {list}[{dict}]
         {
