@@ -136,12 +136,13 @@ def order_by(self, member, descending=False):
     """
 ```
 ```python
-def fetch(self, limit=1000, skip=0):
+def fetch(self, limit=1000, skip=0, fetch_reference=True):
     """
     Fetch documents by the query.
     :param limit: {int} The size of the pagination. (The limit of the result items.)
     :param skip: {int} The offset of the pagination. (Skip x items.)
-    :returns: {list}, {int}
+    :returns: {tuple}
+        ({list}[{Document}], {int}total)
         The documents.
         The total items.
     """
