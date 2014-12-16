@@ -242,6 +242,8 @@ class Query(object):
         :param member: {string} The property name of the document.
         :param limit: {int} The number of returns.
         :param descending: {bool} Is sorted by descending?
+        :param id_field: {bool} There is '-' in id, and ElasticSearch will .split() it.
+                                        If this param is true, asahi will join that together.
         :returns: {list}
             {list}[{dict}]
             {
