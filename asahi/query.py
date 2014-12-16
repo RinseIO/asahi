@@ -235,7 +235,7 @@ class Query(object):
                     raise e
         return count_result['count']
 
-    def group_by(self, member, limit=10, descending=True):
+    def group_by(self, member, limit=10, descending=True, id_field=True):
         """
         Aggregations
         http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
@@ -253,20 +253,36 @@ class Query(object):
             raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
         es = self.document_class._es
         es_query, sort_items = self.__compile_queries(self.items)
-        query_body = {
-            'size': 0,
-            'aggs': {
-                'group': {
-                    'terms': {
-                        'field': member,
-                        'size': limit,
-                        'order': {
-                            '_count': 'desc' if descending else 'asc'
+        if id_field:
+            query_body = {
+                'size': 0,
+                'aggs': {
+                    'group': {
+                        'terms': {
+                            'script': 'doc["%s"].values.join("-")' % member,
+                            'size': limit,
+                            'order': {
+                                '_count': 'desc' if descending else 'asc'
+                            }
                         }
                     }
                 }
             }
-        }
+        else:
+            query_body = {
+                'size': 0,
+                'aggs': {
+                    'group': {
+                        'terms': {
+                            'field': member,
+                            'size': limit,
+                            'order': {
+                                '_count': 'desc' if descending else 'asc'
+                            }
+                        }
+                    }
+                }
+            }
         if es_query:
             query_body['query'] = es_query
 
