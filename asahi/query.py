@@ -17,8 +17,12 @@ class QueryOperation(object):
 
     intersection = 0x040
     union = 0x080
-    all = 0x100
-    order_asc = 0x200
+
+    all = 0x0100
+
+    # asc: 0x200, desc 0x000
+    # order: 0x400
+    order_asc = 0x600
     order_desc = 0x400
 
 
@@ -70,7 +74,7 @@ class Query(object):
         if isinstance(args[0], basestring):
             # .and('member', equal='')
             member = args[0]
-            if member not in self.document_class.get_properties().keys():
+            if member.split('.', 1)[0] not in self.document_class.get_properties().keys():
                 raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
             self.items.append(QueryCell(
@@ -110,7 +114,7 @@ class Query(object):
         if isinstance(args[0], basestring):
             # .or('member', equal='')
             member = args[0]
-            if member not in self.document_class.get_properties().keys():
+            if member.split('.', 1)[0] not in self.document_class.get_properties().keys():
                 raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
             self.items.append(QueryCell(
@@ -132,10 +136,10 @@ class Query(object):
         """
         Append the order query.
         :param member: {string} The property name of the document.
-        :param descending: {bool} Is sorted by descending.
+        :param descending: {bool} Is sorted by descending?
         :return: {asahi.query.Query}
         """
-        if member not in self.document_class.get_properties().keys():
+        if member.split('.', 1)[0] not in self.document_class.get_properties().keys():
             raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
         if descending:
             operation_code = QueryOperation.order_desc
@@ -156,7 +160,8 @@ class Query(object):
         Fetch documents by the query.
         :param limit: {int} The size of the pagination. (The limit of the result items.)
         :param skip: {int} The offset of the pagination. (Skip x items.)
-        :returns: {list}, {int}
+        :returns: {tuple}
+            ({list}[{Document}], {int}total)
             The documents.
             The total items.
         """
@@ -175,6 +180,7 @@ class Query(object):
                 search_result = __search()
             else:
                 raise e
+
         result = []
         for hits in search_result['hits']['hits']:
             result.append(self.document_class(_id=hits['_id'], _version=hits['_version'], **hits['_source']))
@@ -198,7 +204,7 @@ class Query(object):
         Count documents by the query.
         :return: {int}
         """
-        query, sort = self.__compile_queries(self.items)
+        query, _ = self.__compile_queries(self.items)
         es = self.document_class._es
         if query is None:
             def __count():
@@ -229,6 +235,75 @@ class Query(object):
                     raise e
         return count_result['count']
 
+    def group_by(self, member, limit=10, descending=True, id_field=True):
+        """
+        Aggregations
+        http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
+        :param member: {string} The property name of the document.
+        :param limit: {int} The number of returns.
+        :param descending: {bool} Is sorted by descending?
+        :param id_field: {bool} There is '-' in id, and ElasticSearch will .split() it.
+                                        If this param is true, asahi will join that together.
+        :returns: {list}
+            {list}[{dict}]
+            {
+                doc_count: {int},
+                key: 'term'
+            }
+        """
+        if member.split('.', 1)[0] not in self.document_class.get_properties().keys():
+            raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
+        es = self.document_class._es
+        es_query, sort_items = self.__compile_queries(self.items)
+        if id_field:
+            query_body = {
+                'size': 0,
+                'aggs': {
+                    'group': {
+                        'terms': {
+                            'script': 'doc["%s"].values.join("-")' % member,
+                            'size': limit,
+                            'order': {
+                                '_count': 'desc' if descending else 'asc'
+                            }
+                        }
+                    }
+                }
+            }
+        else:
+            query_body = {
+                'size': 0,
+                'aggs': {
+                    'group': {
+                        'terms': {
+                            'field': member,
+                            'size': limit,
+                            'order': {
+                                '_count': 'desc' if descending else 'asc'
+                            }
+                        }
+                    }
+                }
+            }
+        if es_query:
+            query_body['query'] = es_query
+
+        def __search():
+            return es.search(
+                index=self.document_class.get_index_name(),
+                body=query_body,
+            )
+        try:
+            search_result = __search()
+        except NotFoundError as e:
+            if 'IndexMissingException' in str(e):  # try to create index
+                es.indices.create(index=self.document_class.get_index_name())
+                search_result = __search()
+            else:
+                raise e
+
+        return search_result['aggregations']['group']['buckets']
+
 
     # -----------------------------------------------------
     # Private methods.
@@ -248,7 +323,7 @@ class Query(object):
             'fields': ['_source'],
             'sort': sort_items,
         }
-        if es_query is not None:
+        if es_query:
             result['query'] = es_query
         return result
 
@@ -256,7 +331,7 @@ class Query(object):
         """
         Compile asahi query cells to the elastic search query.
         :param queries: {list} The asahi query cells.
-        :returns: {dict or None}, {list}
+        :returns: {tuple} ({dict or None}, {list})
             The elastic search query dict.
             The elastic search sort list.
         """
@@ -289,6 +364,7 @@ class Query(object):
                         optional_items.append(query_item)
                         last_item_is_necessary = False
                 elif query.operation & QueryOperation.order_asc == QueryOperation.order_asc:
+                    # order asc
                     sort_items.append({
                         query.member: {
                             'order': 'asc',
@@ -297,6 +373,7 @@ class Query(object):
                         }
                     })
                 elif query.operation & QueryOperation.order_desc == QueryOperation.order_desc:
+                    # order desc
                     sort_items.append({
                         query.member: {
                             'order': 'desc',
@@ -304,6 +381,7 @@ class Query(object):
                             'missing': '_last',
                         }
                     })
+
         if len(necessary_items):
             optional_items.append({
                 'bool': {

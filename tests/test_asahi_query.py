@@ -22,7 +22,7 @@ class TestAsahiQueryOperation(unittest.TestCase):
         self.assertEqual(QueryOperation.intersection, 0x040)
         self.assertEqual(QueryOperation.union, 0x080)
         self.assertEqual(QueryOperation.all, 0x100)
-        self.assertEqual(QueryOperation.order_asc, 0x200)
+        self.assertEqual(QueryOperation.order_asc, 0x600)
         self.assertEqual(QueryOperation.order_desc, 0x400)
 
 
