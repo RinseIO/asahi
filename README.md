@@ -148,7 +148,7 @@ def fetch(self, limit=1000, skip=0, fetch_reference=True):
     """
 ```
 ```python
-def first(self):
+def first(self, fetch_reference=True):
     """
     Fetch the first document.
     :return: {asahi.document.Document or None}
