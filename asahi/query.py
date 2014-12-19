@@ -235,15 +235,13 @@ class Query(object):
                     raise e
         return count_result['count']
 
-    def group_by(self, member, limit=10, descending=True, id_field=True):
+    def group_by(self, member, limit=10, descending=True):
         """
         Aggregations
         http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
         :param member: {string} The property name of the document.
         :param limit: {int} The number of returns.
         :param descending: {bool} Is sorted by descending?
-        :param id_field: {bool} There is '-' in id, and ElasticSearch will .split() it.
-                                        If this param is true, asahi will join that together.
         :returns: {list}
             {list}[{dict}]
             {
@@ -255,36 +253,20 @@ class Query(object):
             raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
         es = self.document_class._es
         es_query, sort_items = self.__compile_queries(self.items)
-        if id_field:
-            query_body = {
-                'size': 0,
-                'aggs': {
-                    'group': {
-                        'terms': {
-                            'script': 'doc["%s"].values.join("-")' % member,
-                            'size': limit,
-                            'order': {
-                                '_count': 'desc' if descending else 'asc'
-                            }
+        query_body = {
+            'size': 0,
+            'aggs': {
+                'group': {
+                    'terms': {
+                        'field': member,
+                        'size': limit,
+                        'order': {
+                            '_count': 'desc' if descending else 'asc'
                         }
                     }
                 }
             }
-        else:
-            query_body = {
-                'size': 0,
-                'aggs': {
-                    'group': {
-                        'terms': {
-                            'field': member,
-                            'size': limit,
-                            'order': {
-                                '_count': 'desc' if descending else 'asc'
-                            }
-                        }
-                    }
-                }
-            }
+        }
         if es_query:
             query_body['query'] = es_query
 
