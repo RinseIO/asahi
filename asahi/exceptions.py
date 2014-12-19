@@ -18,3 +18,4 @@ class QuerySyntaxError(Exception):
 ConflictError = exceptions.ConflictError
 NotFoundError = exceptions.NotFoundError
 ConnectionError = exceptions.ConnectionError
+TransportError = exceptions.TransportError
