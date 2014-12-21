@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from .deep_query import update_reference_properties
 from .exceptions import NotFoundError, PropertyNotExist, QuerySyntaxError
@@ -330,6 +331,8 @@ class Query(object):
                     necessary_items.append(sub_query)
                     last_item_is_necessary = True
             else:
+                if isinstance(query.value, str):
+                    query.value = re.sub(r'[<>]', '', query.value)
                 if query.operation & QueryOperation.intersection == QueryOperation.intersection:
                     # intersect
                     query_item = self.__compile_query(query)
