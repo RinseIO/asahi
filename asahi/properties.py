@@ -158,8 +158,7 @@ class ReferenceProperty(Property):
                 raise BadValueError('%s is required' % self.name)
             document_instance._document[self.name] = None
             document_instance._reference_document[self.name] = None
-
-        if isinstance(value, unicode):
+        elif isinstance(value, basestring):
             # set reference id
             document_instance._document[self.name] = value
         else:

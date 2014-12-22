@@ -148,7 +148,7 @@ def fetch(self, limit=1000, skip=0, fetch_reference=True):
     """
 ```
 ```python
-def first(self):
+def first(self, fetch_reference=True):
     """
     Fetch the first document.
     :return: {asahi.document.Document or None}
@@ -162,15 +162,13 @@ def count(self):
     """
 ```
 ```python
-def group_by(self, member, limit=10, descending=True, id_field=True):
+def group_by(self, member, limit=10, descending=True):
     """
     Aggregations
     http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html
     :param member: {string} The property name of the document.
     :param limit: {int} The number of returns.
     :param descending: {bool} Is sorted by descending?
-    :param id_field: {bool} There is '-' in id, and ElasticSearch will .split() it.
-                                    If this param is true, asahi will join that together.
     :returns: {list}
         {list}[{dict}]
         {
