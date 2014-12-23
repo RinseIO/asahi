@@ -17,7 +17,7 @@ class TestAsahiQueryOperation(unittest.TestCase):
         self.assertEqual(QueryOperation.greater_equal, 0x005)
         self.assertEqual(QueryOperation.like, 0x011)
         self.assertEqual(QueryOperation.unlike, 0x010)
-        self.assertEqual(QueryOperation.among, 0x020)
+        self.assertEqual(QueryOperation.among, 0x021)
 
         self.assertEqual(QueryOperation.intersection, 0x040)
         self.assertEqual(QueryOperation.union, 0x080)

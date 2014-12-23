@@ -14,7 +14,7 @@ class QueryOperation(object):
     greater_equal = 0x005
     like = 0x011  # only for string
     unlike = 0x010  # only for string
-    among = 0x020  # it is mean `in`
+    among = 0x021  # it is mean `in`
 
     intersection = 0x040
     union = 0x080
@@ -40,6 +40,7 @@ class Query(object):
     An asahi query object.
     """
     def __init__(self, document_class):
+        self.among_empty = False
         self.document_class = document_class
         self.items = [
             QueryCell(QueryOperation.all)
@@ -78,6 +79,9 @@ class Query(object):
             if member.split('.', 1)[0] not in self.document_class.get_properties().keys():
                 raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
+            if self.among_empty or (operation_code & QueryOperation.among == QueryOperation.among and not value):
+                self.among_empty = True
+                return self
             self.items.append(QueryCell(
                 QueryOperation.intersection | operation_code,
                 member=member,
@@ -85,8 +89,11 @@ class Query(object):
             ))
         else:
             # .and(lambda x: x.where())
-            func = args[0]
-            queries = func(self.document_class).items
+            sub_query = args[0](self.document_class)
+            if self.among_empty or sub_query.among_empty:
+                self.among_empty = True
+                return self
+            queries = sub_query.items
             self.items.append(QueryCell(
                 QueryOperation.intersection,
                 sub_queries=queries
@@ -166,6 +173,9 @@ class Query(object):
             The documents.
             The total items.
         """
+        if self.among_empty:
+            return [], 0
+
         es = self.document_class._es
         def __search():
             return es.search(
@@ -205,6 +215,9 @@ class Query(object):
         Count documents by the query.
         :return: {int}
         """
+        if self.among_empty:
+            return 0
+
         query, _ = self.__compile_queries(self.items)
         es = self.document_class._es
         if query is None:
