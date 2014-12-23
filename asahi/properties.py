@@ -123,14 +123,17 @@ class ListProperty(Property):
             raise ValueError('Item type %s is not acceptable' % item_type.__name__)
         self.item_type = item_type
 
-    def _to_python(self, value):
+
+    def __get__(self, document_instance, document_class):
+        if document_instance is None:
+            return self
+        return ListProxy(document_instance._document, self.name, self.item_type)
+
+    def __set__(self, document_instance, value):
         if self.item_type is datetime:
-            return [DateTimeProperty._to_python(x) for x in value]
-        return [self.item_type(x) for x in value]
-    def _to_json(self, value):
-        if self.item_type is datetime:
-            return [DateTimeProperty._to_json(x) for x in value]
-        return [self.item_type(x) for x in value]
+            document_instance._document[self.name] = [DateTimeProperty._to_json(x) for x in value]
+        else:
+            document_instance._document[self.name] = [self.item_type(x) for x in value]
 
 class DictProperty(Property):
     _to_python = dict
@@ -148,9 +151,7 @@ class ReferenceProperty(Property):
     def __get__(self, document_instance, document_class):
         if document_instance is None:
             return self
-
-        value = document_instance._reference_document.get(self.name) or document_instance._document.get(self.name)
-        return value
+        return document_instance._reference_document.get(self.name) or document_instance._document.get(self.name)
 
     def __set__(self, document_instance, value):
         if value is None:
@@ -166,3 +167,23 @@ class ReferenceProperty(Property):
                 raise ValueError('Value should be %s' % self.document_class)
             document_instance._document[self.name] = value._id
             document_instance._reference_document[self.name] = value
+
+
+class ListProxy(list):
+    def __init__(self, document, name, item_type):
+        super(ListProxy, self).__init__()
+        self.document = document
+        self.name = name
+        self.item_type = item_type
+
+    def __setitem__(self, key, value):
+        if self.item_type is datetime:
+            list.__setitem__(self.document[self.name], key, DateTimeProperty._to_json(value))
+        else:
+            list.__setitem__(self.document[self.name], key, self.item_type(value))
+
+    def __getitem__(self, item):
+        if self.item_type is datetime:
+            DateTimeProperty._to_python(list.__getitem__(self.document[self.name], item))
+        else:
+            self.item_type(list.__getitem__(self.document[self.name], item))
