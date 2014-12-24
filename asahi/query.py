@@ -14,7 +14,7 @@ class QueryOperation(object):
     greater_equal = 0x005
     like = 0x011  # only for string
     unlike = 0x010  # only for string
-    among = 0x021  # it is mean `in`
+    contains = 0x021  # it is mean `in`
 
     intersection = 0x040
     union = 0x080
@@ -40,7 +40,7 @@ class Query(object):
     An asahi query object.
     """
     def __init__(self, document_class):
-        self.among_empty = False
+        self.contains_empty = False
         self.document_class = document_class
         self.items = [
             QueryCell(QueryOperation.all)
@@ -69,7 +69,7 @@ class Query(object):
             greater,
             greater_equal,
             like,
-            among,
+            contains,
         ]
         :return: {asahi.query.Query}
         """
@@ -79,8 +79,8 @@ class Query(object):
             if member.split('.', 1)[0] not in self.document_class.get_properties().keys():
                 raise PropertyNotExist('%s not in %s' % (member, self.document_class.__name__))
             operation_code, value = self.__parse_operation(**kwargs)
-            if self.among_empty or (operation_code & QueryOperation.among == QueryOperation.among and not value):
-                self.among_empty = True
+            if self.contains_empty or (operation_code & QueryOperation.contains == QueryOperation.contains and not value):
+                self.contains_empty = True
                 return self
             self.items.append(QueryCell(
                 QueryOperation.intersection | operation_code,
@@ -90,8 +90,8 @@ class Query(object):
         else:
             # .and(lambda x: x.where())
             sub_query = args[0](self.document_class)
-            if self.among_empty or sub_query.among_empty:
-                self.among_empty = True
+            if self.contains_empty or sub_query.contains_empty:
+                self.contains_empty = True
                 return self
             queries = sub_query.items
             self.items.append(QueryCell(
@@ -115,7 +115,7 @@ class Query(object):
             greater_equal,
             like,
             unlike,
-            among,
+            contains,
         ]
         :return: {asahi.query.Query}
         """
@@ -173,7 +173,7 @@ class Query(object):
             The documents.
             The total items.
         """
-        if self.among_empty:
+        if self.contains_empty:
             return [], 0
 
         es = self.document_class._es
@@ -215,7 +215,7 @@ class Query(object):
         Count documents by the query.
         :return: {int}
         """
-        if self.among_empty:
+        if self.contains_empty:
             return 0
 
         query, _ = self.__compile_queries(self.items)
@@ -453,7 +453,7 @@ class Query(object):
                     ]
                 }
             }
-        elif operation & QueryOperation.among == QueryOperation.among:
+        elif operation & QueryOperation.contains == QueryOperation.contains:
             return {
                 'bool': {
                     'should': [{'match': {query.member: {'query': x, 'operator': 'and'}}} for x in query.value],
@@ -584,7 +584,8 @@ class Query(object):
                 'greater_equal': QueryOperation.greater_equal,
                 'like': QueryOperation.like,
                 'unlike': QueryOperation.unlike,
-                'among': QueryOperation.among,
+                'contains': QueryOperation.contains,
+                'among': QueryOperation.contains,
             }[key]
         except KeyError:
             raise QuerySyntaxError

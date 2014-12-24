@@ -17,7 +17,7 @@ class TestAsahiQueryOperation(unittest.TestCase):
         self.assertEqual(QueryOperation.greater_equal, 0x005)
         self.assertEqual(QueryOperation.like, 0x011)
         self.assertEqual(QueryOperation.unlike, 0x010)
-        self.assertEqual(QueryOperation.among, 0x021)
+        self.assertEqual(QueryOperation.contains, 0x021)
 
         self.assertEqual(QueryOperation.intersection, 0x040)
         self.assertEqual(QueryOperation.union, 0x080)
@@ -260,7 +260,7 @@ class TestAsahiQuery(unittest.TestCase):
         })
     def test_asahi_query__compile_query_among(self):
         query_cell = QueryCell(
-            QueryOperation.among,
+            QueryOperation.contains,
             member='email',
             value=['kelp'],
         )
@@ -272,7 +272,7 @@ class TestAsahiQuery(unittest.TestCase):
         })
     def test_asahi_query__compile_query_among_none(self):
         query_cell = QueryCell(
-            QueryOperation.among,
+            QueryOperation.contains,
             member='email',
             value=[],
         )
@@ -399,7 +399,7 @@ class TestAsahiQuery(unittest.TestCase):
         self.assertEqual(value, 'like')
     def test_asahi_query__parse_operation_among(self):
         operation, value = self.query._Query__parse_operation(among='among')
-        self.assertEqual(operation, QueryOperation.among)
+        self.assertEqual(operation, QueryOperation.contains)
         self.assertEqual(value, 'among')
     def test_asahi_query__parse_operation_raise(self):
         self.assertRaises(QuerySyntaxError, self.query._Query__parse_operation, good='xx')

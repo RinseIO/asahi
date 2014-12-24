@@ -154,7 +154,8 @@ class Document(object):
             greater,
             greater_equal,
             like,
-            among,
+            unlike,
+            contains,
         ]
         :return: {asahi.query.Query}
         """
