@@ -68,7 +68,7 @@ def where(cls, *args, **kwargs):
         greater_equal,
         like,
         unlike,
-        among,
+        contains,
     ]
     :return: {asahi.query.Query}
     """
@@ -121,7 +121,7 @@ def where(self, *args, **kwargs):
         greater_equal,
         like,
         unlike,
-        among,
+        contains,
     ]
     :return: {asahi.query.Query}
     """
@@ -215,7 +215,7 @@ select * from "ExampleModel" where "category" = 1 or "category" = 3
         order by "created_at" limit 20 offset 20
 ```
 ```python
-models, total = ExampleModel.where('category', among=[1, 3])\
+models, total = ExampleModel.where('category', contains=[1, 3])\
         .order_by('created_at').fetch(20, 20)
 ```
 
