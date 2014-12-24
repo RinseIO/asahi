@@ -118,7 +118,7 @@ class ListProperty(Property):
         super(ListProperty, self).__init__(*args, **kwargs)
         if not isinstance(item_type, type):
             raise TypeError('Item type should be a type object')
-        if item_type not in [str, int, float, bool, dict, datetime]:
+        if item_type not in [str, int, float, bool, datetime] and not issubclass(item_type, dict):
             raise ValueError('Item type %s is not acceptable' % item_type.__name__)
         self.item_type = item_type
 
@@ -129,12 +129,14 @@ class ListProperty(Property):
             return None
         if self.item_type is dict:
             return document_instance._document[self.name]
+        elif issubclass(self.item_type, dict):
+            return [self.item_type(**x) for x in document_instance._document[self.name]]
         return ListProxy(document_instance._document, self.name, self.item_type)
 
     def __set__(self, document_instance, value):
         if self.item_type is datetime:
             document_instance._document[self.name] = [DateTimeProperty._to_json(x) for x in value]
-        elif self.item_type is dict:
+        elif issubclass(self.item_type, dict):
             document_instance._document[self.name] = value
         else:
             document_instance._document[self.name] = [self.item_type(x) for x in value]
