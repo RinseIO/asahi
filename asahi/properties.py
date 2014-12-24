@@ -200,13 +200,6 @@ class ListProxy(list):
     def __eq__(self, other):
         return list.__eq__([self._to_python(x) for x in self.document[self.name]], other)
 
-    def __delslice__(self, i, j):
-        list.__delslice__(self.document[self.name], i, j)
-    def __getslice__(self, i, j):
-        return [self._to_python(x) for x in list.__getslice__(self.document[self.name], i, j)]
-    def __setslice__(self, i, j, sequence):
-        list.__setslice__(self.document[self.name], i, j, (self._to_json(x) for x in sequence))
-
     # +, *
     def __add__(self, other):
         return list.__add__([self._to_python(x) for x in self.document[self.name]], other)
@@ -244,5 +237,5 @@ class ListProxy(list):
     def reverse(self):
         self.document[self.name].reverse()
 
-    def sort(self, cmp=None, key=None, reverse=False):
-        self.document[self.name].sort(cmp=cmp, key=key, reverse=reverse)
+    def sort(self, key=None, reverse=None):
+        self.document[self.name].sort(key=key, reverse=reverse)
