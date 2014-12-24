@@ -125,6 +125,8 @@ class ListProperty(Property):
     def __get__(self, document_instance, document_class):
         if document_instance is None:
             return self
+        if document_instance._document.get(self.name) is None:
+            return None
         return ListProxy(document_instance._document, self.name, self.item_type)
 
     def __set__(self, document_instance, value):
@@ -173,15 +175,74 @@ class ListProxy(list):
         self.document = document
         self.name = name
         self.item_type = item_type
+        if item_type is datetime:
+            self._to_python = DateTimeProperty._to_python
+            self._to_json = DateTimeProperty._to_json
+        else:
+            self._to_python = self.item_type
+            self._to_json = self.item_type
 
     def __setitem__(self, key, value):
-        if self.item_type is datetime:
-            list.__setitem__(self.document[self.name], key, DateTimeProperty._to_json(value))
-        else:
-            list.__setitem__(self.document[self.name], key, self.item_type(value))
+        list.__setitem__(self.document[self.name], key, self._to_json(value))
 
     def __getitem__(self, item):
-        if self.item_type is datetime:
-            DateTimeProperty._to_python(list.__getitem__(self.document[self.name], item))
-        else:
-            self.item_type(list.__getitem__(self.document[self.name], item))
+        return self._to_python(list.__getitem__(self.document[self.name], item))
+
+    def __delitem__(self, key):
+        list.__delitem__(self.document[self.name], key)
+
+    def __contains__(self, item):
+        return list.__contains__(self.document[self.name], self._to_json(item))
+
+    def __str__(self):
+        return list.__str__([self._to_python(x) for x in self.document[self.name]])
+
+    def __eq__(self, other):
+        return list.__eq__([self._to_python(x) for x in self.document[self.name]], other)
+
+    def __delslice__(self, i, j):
+        list.__delslice__(self.document[self.name], i, j)
+    def __getslice__(self, i, j):
+        return [self._to_python(x) for x in list.__getslice__(self.document[self.name], i, j)]
+    def __setslice__(self, i, j, sequence):
+        list.__setslice__(self.document[self.name], i, j, (self._to_json(x) for x in sequence))
+
+    # +, *
+    def __add__(self, other):
+        return list.__add__([self._to_python(x) for x in self.document[self.name]], other)
+    def __mul__(self, other):
+        return list.__mul__([self._to_python(x) for x in self.document[self.name]], other)
+    def __imul__(self, other):
+        return list.__imul__([self._to_python(x) for x in self.document[self.name]], other)
+    def __rmul__(self, other):
+        return list.__rmul__([self._to_python(x) for x in self.document[self.name]], other)
+
+    def append(self, p_object):
+        self.document[self.name].append(self._to_json(p_object))
+
+    def clear(self):
+        self.document[self.name].clear()
+
+    def count(self, value):
+        return self.document[self.name].count(self._to_json(value))
+
+    def extend(self, iterable):
+        self.document[self.name].extend([self._to_json(x) for x in iterable])
+
+    def index(self, value, start=None, stop=None):
+        self.document[self.name].index(self._to_json(value), start, stop)
+
+    def insert(self, index, p_object):
+        self.document[self.name].insert(index, self._to_json(p_object))
+
+    def pop(self, index=None):
+        return self.document[self.name].pop(index)
+
+    def remove(self, value):
+        self.document[self.name].remove(self._to_json(value))
+
+    def reverse(self):
+        self.document[self.name].reverse()
+
+    def sort(self, cmp=None, key=None, reverse=False):
+        self.document[self.name].sort(cmp=cmp, key=key, reverse=reverse)
