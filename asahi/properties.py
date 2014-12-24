@@ -216,6 +216,9 @@ class ListProxy(list):
     def clear(self):
         self.document[self.name].clear()
 
+    def copy(self):
+        return [self._to_python(x) for x in self.document[self.name]]
+
     def count(self, value):
         return self.document[self.name].count(self._to_json(value))
 
