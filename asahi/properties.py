@@ -123,7 +123,6 @@ class ListProperty(Property):
             raise ValueError('Item type %s is not acceptable' % item_type.__name__)
         self.item_type = item_type
 
-
     def __get__(self, document_instance, document_class):
         if document_instance is None:
             return self
@@ -138,8 +137,26 @@ class ListProperty(Property):
             document_instance._document[self.name] = [self.item_type(x) for x in value]
 
 class DictProperty(Property):
-    _to_python = dict
-    _to_json = dict
+    """
+    DictProperty is very simple property. It doesn't check every things.
+    Like data type, convert datetime format and more... you should handle that by yourself.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Init dict property.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        super(DictProperty, self).__init__(*args, **kwargs)
+
+    def __get__(self, document_instance, document_class):
+        if document_instance is None:
+            return self
+        return document_instance._document[self.name]
+
+    def __set__(self, document_instance, value):
+        document_instance._document[self.name] = value
 
 class ReferenceProperty(Property):
     def __init__(self, reference_class, *args, **kwargs):
@@ -171,6 +188,9 @@ class ReferenceProperty(Property):
             document_instance._reference_document[self.name] = value
 
 
+# ---------------------------------------------------------
+# Poxy
+# ---------------------------------------------------------
 class ListProxy(list):
     def __init__(self, document, name, item_type):
         super(ListProxy, self).__init__()
