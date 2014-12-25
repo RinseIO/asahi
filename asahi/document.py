@@ -1,7 +1,7 @@
 from datetime import datetime
 from . import utils
 from .query import Query
-from .properties import Property, StringProperty, IntegerProperty, DateTimeProperty, ListProxy
+from .properties import Property, StringProperty, IntegerProperty, DateTimeProperty
 from .exceptions import NotFoundError
 from .deep_query import update_reference_properties
 
@@ -47,7 +47,7 @@ class Document(object):
             if attribute_name.startswith('__'):
                 continue
             attribute = getattr(cls, attribute_name)
-            if isinstance(attribute, Property) or isinstance(attribute, ListProxy):
+            if isinstance(attribute, Property):
                 properties[attribute_name] = attribute
                 attribute.__property_config__(cls, attribute_name)
         return properties
