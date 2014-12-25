@@ -136,13 +136,9 @@ class ListProperty(Property):
         if not isinstance(value, list):
             raise BadValueError('%s should be list' % self.name)
         if self.item_type:
-            if issubclass(self.item_type, dict):
-                document_instance._document[self.name] = [self.item_type(**x) for x in value]
-            else:
-                document_instance._document[self.name] = [self.item_type(x) for x in value]
-            return
-
-        document_instance._document[self.name] = [value]
+            document_instance._document[self.name] = [self.item_type(x) for x in value]
+        else:
+            document_instance._document[self.name] = value
 
 class DictProperty(Property):
     """
