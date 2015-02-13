@@ -24,7 +24,9 @@ def update_reference_properties(documents):
     # scan what id of documents should be fetched
     for document in documents:
         for property in reference_properties:  # loop all reference properties in the document
-            data_table[property.reference_class][getattr(document, property.name)] = None
+            document_id = getattr(document, property.name)
+            if document_id:
+                data_table[property.reference_class][document_id] = None
 
     # fetch documents
     for document_class, items in data_table.items():

@@ -80,8 +80,10 @@ class Document(object):
         :param ids: {list or string} The documents' id.
         :return: {list or Document}
         """
-        if ids is None:
+        if ids is None or ids == '':
             return None
+        if isinstance(ids, list) and not len(ids):
+            return []
         es = utils.get_elasticsearch()
         if isinstance(ids, list):
             # fetch documents
@@ -93,7 +95,7 @@ class Document(object):
                     index=cls.get_index_name(),
                     doc_type=cls.__name__,
                     body={
-                        'ids': list([x for x in set(ids) if not x is None])
+                        'ids': list([x for x in set(ids) if x])
                     },
                 )
 
