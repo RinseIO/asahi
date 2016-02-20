@@ -97,12 +97,15 @@ class Handler(object):
                 }
             )
         for doc in documents:
-            es.index(
-                index=db.dbname,
-                doc_type=document_class.__name__,
-                id=doc._id,
-                body=doc._doc
-            )
+            try:
+                es.index(
+                    index=db.dbname,
+                    doc_type=document_class.__name__,
+                    id=doc._id,
+                    body=doc._doc
+                )
+            except:
+                pass
 
     def __get_db_url(self, app_name):
         for database in self.databases:
