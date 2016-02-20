@@ -86,6 +86,16 @@ class Handler(object):
         except NotFoundError:
             pass
         es.indices.create(db.dbname)
+        if db.dbname == 'ispo_specials':
+            es.indices.put_mapping(
+                index=db.dbname,
+                doc_type=document_class.__name__,
+                body={
+                    'properties': {
+                        'groups': {'type': 'string', 'index': 'not_analyzed'}
+                    }
+                }
+            )
         for doc in documents:
             try:
                 es.index(
