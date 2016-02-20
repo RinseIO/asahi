@@ -89,7 +89,7 @@ class Handler(object):
         if db.dbname == 'ispo_specials':
             es.indices.put_mapping(
                 index=db.dbname,
-                doc_type=document_class.mro__name__,
+                doc_type=document_class.__name__,
                 body={
                     'properties': {
                         'groups': {'type': 'string', 'index': 'not_analyzed'}
