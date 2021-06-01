@@ -1,5 +1,5 @@
 # elasticsearch-py
-urllib3==1.9.1
+urllib3==1.26.5
 ujson==1.33
 
 # unit-test
